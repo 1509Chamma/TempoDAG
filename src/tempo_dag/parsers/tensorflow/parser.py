@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class TensorFlowParser:
     """
-    Translates TensorFlow/Keras models into the EdgeLSTM IR.
+    Translates TensorFlow/Keras models into the TempoDAG IR.
 
     It works by first exporting the model to an ONNX model using tf2onnx,
     and then parsing the resulting ONNX model into an IR Graph.
@@ -36,7 +36,7 @@ class TensorFlowParser:
             **export_kwargs: Additional arguments to pass to tf2onnx.
 
         Returns:
-            An EdgeLSTM IR Graph representation of the model.
+            A TempoDAG IR Graph representation of the model.
         """
         # Delayed imports as TF is heavy and might be missing in some environments
         try:

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class ONNXParser:
     """
-    Parses ONNX models into the EdgeLSTM Intermediate Representation (IR).
+    Parses ONNX models into the TempoDAG Intermediate Representation (IR).
     """
 
     def __init__(

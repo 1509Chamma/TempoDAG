@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 class PyTorchParser:
     """
-    Translates PyTorch modules into the EdgeLSTM Intermediate Representation (IR).
+    Translates PyTorch modules into the TempoDAG Intermediate Representation (IR).
 
     It works by first exporting the module to an ONNX model and then parsing
     the resulting ONNX model into an IR Graph.
@@ -41,7 +41,7 @@ class PyTorchParser:
             **export_kwargs: Additional arguments to pass to torch.onnx.export.
 
         Returns:
-            An EdgeLSTM IR Graph representation of the module.
+            A TempoDAG IR Graph representation of the module.
         """
         import torch  # Delayed import for performance if not used
 
