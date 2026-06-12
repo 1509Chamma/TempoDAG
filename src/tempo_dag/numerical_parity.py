@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 
 import numpy as np
 
-from edge_lstm.quantization_config import (
+from tempo_dag.quantization_config import (
     QuantizationScheme,
     QuantizationSpec,
     QuantizationType,
@@ -19,7 +19,7 @@ from edge_lstm.quantization_config import (
 )
 
 if TYPE_CHECKING:
-    from edge_lstm.ir.graph import Graph
+    from tempo_dag.ir.graph import Graph
 
 
 DEFAULT_METRICS = ("mae", "mse", "max_error", "relative_error", "sqnr")
@@ -1492,3 +1492,4 @@ __all__ = [
     "quantize_array",
     "run_numerical_parity_test",
 ]
+

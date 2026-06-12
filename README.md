@@ -1,6 +1,6 @@
-# EdgeLSTM
+# TempoDAG
 
-EdgeLSTM is an experimental compiler toolkit for taking time-series models
+TempoDAG is an experimental compiler toolkit for taking time-series models
 toward FPGA-friendly intermediate representations and HLS generation. The
 current repository already has solid core pieces in place for graph modelling,
 operator registration, parser front-ends, quantization support, representative
@@ -12,7 +12,7 @@ sequence-model lowering can sit on top of.
 
 The repo uses a `src/` layout on disk, but `src` is not part of the public
 import path. For IR-facing code, prefer package imports such as
-`edge_lstm.ir` rather than anything under `src/...`.
+`tempo_dag.ir` rather than anything under `src/...`.
 
 ## Current Repo State
 
@@ -38,7 +38,7 @@ What is still future work:
 
 ```text
 .
-|-- src/edge_lstm/
+|-- src/tempo_dag/
 |   |-- calibration/     Representative dataset sampling and statistics
 |   |-- codegen/hls/     Template resolution and HLS rendering
 |   |-- device/          FPGA device schemas and preset registry
@@ -108,7 +108,7 @@ Run the same core checks used during development:
 
 ## Future Efforts
 
-The next meaningful steps for EdgeLSTM are about turning the current compiler
+The next meaningful steps for TempoDAG are about turning the current compiler
 foundation into a more complete hardware flow:
 
 1. Lower LSTM, GRU, and related sequence layers into primitive operator graphs.

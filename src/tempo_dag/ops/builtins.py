@@ -5,11 +5,11 @@ import re
 from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, ClassVar, TypeGuard
 
-from edge_lstm.ir.op import FPGACost, InvalidOperatorInstanceError, Operator
-from edge_lstm.ir.value import Value, ValueType
+from tempo_dag.ir.op import FPGACost, InvalidOperatorInstanceError, Operator
+from tempo_dag.ir.value import Value, ValueType
 
 if TYPE_CHECKING:
-    from edge_lstm.ir.registry import OperatorRegistry
+    from tempo_dag.ir.registry import OperatorRegistry
 
 
 def _snake_case(name: str) -> str:
@@ -1015,3 +1015,4 @@ BUILTIN_OPERATOR_TYPES = [
 def register_builtin_operators(registry: OperatorRegistry) -> None:
     for operator_cls in BUILTIN_OPERATORS:
         registry.register(operator_cls)
+

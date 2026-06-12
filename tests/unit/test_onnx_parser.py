@@ -3,7 +3,7 @@ import unittest
 import onnx.helper as helper
 from onnx import TensorProto
 
-from edge_lstm.parsers.onnx.parser import ONNXParser
+from tempo_dag.parsers.onnx.parser import ONNXParser
 
 
 class TestONNXParser(unittest.TestCase):
@@ -98,3 +98,4 @@ class TestONNXParser(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

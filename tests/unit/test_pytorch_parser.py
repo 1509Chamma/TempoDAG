@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.parsers.pytorch.parser import PyTorchParser
+from tempo_dag.ir.graph import Graph
+from tempo_dag.parsers.pytorch.parser import PyTorchParser
 
 
 class SimpleModule(nn.Module):
@@ -32,3 +32,4 @@ def test_pytorch_parser_converts_simple_module():
     assert "MatMul" in ops_found
     assert "Add" in ops_found
     assert "ReLU" in ops_found
+

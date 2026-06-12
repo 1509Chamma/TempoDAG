@@ -7,14 +7,14 @@ from typing import Any
 import numpy as np
 import pytest
 
-from edge_lstm.calibration import (
+from tempo_dag.calibration import (
     compare_stats,
     compute_stats,
     create_representative_dataset,
     get_strategy,
     kl_divergence,
 )
-from edge_lstm.quantization_config import (
+from tempo_dag.quantization_config import (
     QuantizationScheme,
     QuantizationSpec,
     compute_quant_params,
@@ -387,3 +387,4 @@ def test_output_preserves_dtype() -> None:
     dataset = [np.zeros(8, dtype=np.float32) for _ in range(100)]
     for arr in create_representative_dataset(dataset, 20):
         assert arr.dtype == np.float32
+

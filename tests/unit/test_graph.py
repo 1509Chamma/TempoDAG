@@ -3,10 +3,10 @@ from typing import cast
 
 import pytest
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.ir.op import FPGACost, Operator
-from edge_lstm.ir.registry import OperatorRegistry
-from edge_lstm.ir.value import Value, ValueType
+from tempo_dag.ir.graph import Graph
+from tempo_dag.ir.op import FPGACost, Operator
+from tempo_dag.ir.registry import OperatorRegistry
+from tempo_dag.ir.value import Value, ValueType
 
 
 class PassThroughOperator(Operator):
@@ -138,3 +138,4 @@ def test_graph_rejects_mismatched_operator_dictionary_keys():
             graph_inputs=[],
             graph_outputs=[],
         )
+

@@ -1,4 +1,4 @@
-from edge_lstm.device import FPGADevice, Memory, Policies, Resources
+from tempo_dag.device import FPGADevice, Memory, Policies, Resources
 
 
 class TestFPGADeviceIntegration:
@@ -49,3 +49,4 @@ class TestFPGADeviceIntegration:
         assert device3.policies.target_clock_mhz == 150.0
         assert device3.policies.power_budget_w == 40.0
         assert device3.resources.dsps == 6144
+

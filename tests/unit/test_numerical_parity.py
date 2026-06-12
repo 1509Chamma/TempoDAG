@@ -4,16 +4,16 @@ import pytest
 import torch
 import torch.nn as nn
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.ir.op import FPGACost, Operator
-from edge_lstm.ir.value import Value, ValueType
-from edge_lstm.numerical_parity import (
+from tempo_dag.ir.graph import Graph
+from tempo_dag.ir.op import FPGACost, Operator
+from tempo_dag.ir.value import Value, ValueType
+from tempo_dag.numerical_parity import (
     ONNXRuntimeParityAdapter,
     TensorFlowKerasParityAdapter,
     TorchQuantizedModelSimulator,
     run_numerical_parity_test,
 )
-from edge_lstm.quantization_config import (
+from tempo_dag.quantization_config import (
     FixedPointSpec,
     QuantizationScheme,
     QuantizationSpec,
@@ -430,3 +430,4 @@ def test_tensorflow_keras_adapter_respects_explicit_layer_selection() -> None:
     assert "output" in output_map
     assert "dense_hidden" in layer_map
     assert "dense_output" not in layer_map
+

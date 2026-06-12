@@ -2,7 +2,7 @@ import onnx.helper as helper
 import pytest
 from onnx import AttributeProto, TensorProto
 
-from edge_lstm.parsers.onnx.parser import ONNXParser
+from tempo_dag.parsers.onnx.parser import ONNXParser
 
 
 @pytest.fixture
@@ -120,3 +120,4 @@ def test_all_attribute_types(parser):
     assert attrs["floats_val"] == [1.5, 2.5]
     assert attrs["ints_val"] == [1, 2]
     assert attrs["strings_val"] == ["a", "b"]
+

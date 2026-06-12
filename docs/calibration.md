@@ -14,7 +14,7 @@ deployment calibration pipeline, but it provides the core building blocks.
 
 ## Public API
 
-The main entry points live under `edge_lstm.calibration`:
+The main entry points live under `tempo_dag.calibration`:
 
 - `create_representative_dataset(...)`
 - `DatasetStats`
@@ -135,7 +135,7 @@ These metrics are helpful when deciding whether a sampled calibration subset is
 ```python
 import numpy as np
 
-from edge_lstm.calibration import (
+from tempo_dag.calibration import (
     compare_stats,
     compute_stats,
     create_representative_dataset,
@@ -178,3 +178,4 @@ The most natural calibration follow-ons are:
    selection utilities.
 3. Connect sampled calibration outputs directly into quantization attachment for
    graph values.
+

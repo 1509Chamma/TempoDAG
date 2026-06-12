@@ -4,14 +4,14 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.parsers.onnx.parser import ONNXParser
+from tempo_dag.ir.graph import Graph
+from tempo_dag.parsers.onnx.parser import ONNXParser
 
 if TYPE_CHECKING:
     import torch
     import torch.nn as nn
 
-    from edge_lstm.ir.registry import OperatorRegistry
+    from tempo_dag.ir.registry import OperatorRegistry
 
 
 class PyTorchParser:
@@ -66,3 +66,4 @@ class PyTorchParser:
             torch.onnx.export(module, args, onnx_path, **default_kwargs)
 
             return self.onnx_parser.parse(onnx_path)
+

@@ -1,8 +1,8 @@
 import pytest
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.ir.op import FPGACost, Operator
-from edge_lstm.ir.validation import (
+from tempo_dag.ir.graph import Graph
+from tempo_dag.ir.op import FPGACost, Operator
+from tempo_dag.ir.validation import (
     GraphValidationError,
     OperatorValidationError,
     ValueValidationError,
@@ -10,7 +10,7 @@ from edge_lstm.ir.validation import (
     validate_operators,
     validate_values,
 )
-from edge_lstm.ir.value import Value, ValueType
+from tempo_dag.ir.value import Value, ValueType
 
 
 class DummyOp(Operator):
@@ -225,3 +225,4 @@ def test_op_no_outputs():
     graph = Graph({"v1": make_val("v1")}, {"op1": op}, ["v1"], [])
     with pytest.raises(OperatorValidationError, match="Operator 'op1' has no outputs"):
         validate_operators(graph)
+

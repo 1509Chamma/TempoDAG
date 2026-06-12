@@ -1,6 +1,6 @@
 """Compatibility wrapper for the older public IR validation module."""
 
-from edge_lstm.ir.validation import (
+from tempo_dag.ir.validation import (
     GraphValidationError,
     IRValidationError,
     OperatorValidationError,
@@ -27,3 +27,4 @@ __all__ = [
     "validate_topology",
     "validate_values",
 ]
+

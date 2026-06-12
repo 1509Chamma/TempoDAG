@@ -2,12 +2,12 @@ import math
 from collections.abc import Mapping
 from typing import cast
 
-from edge_lstm.codegen.hls.generator import render_operator_hls
-from edge_lstm.ir.graph import Graph
-from edge_lstm.ir.op import FPGACost, InvalidOperatorInstanceError, Operator
-from edge_lstm.ir.registry import OperatorRegistry
-from edge_lstm.ir.value import Value, ValueType
-from edge_lstm.ops.builtins import register_builtin_operators
+from tempo_dag.codegen.hls.generator import render_operator_hls
+from tempo_dag.ir.graph import Graph
+from tempo_dag.ir.op import FPGACost, InvalidOperatorInstanceError, Operator
+from tempo_dag.ir.registry import OperatorRegistry
+from tempo_dag.ir.value import Value, ValueType
+from tempo_dag.ops.builtins import register_builtin_operators
 
 
 def make_tensor(value_id, shape, axes=None, dtype="float32"):
@@ -160,3 +160,4 @@ def test_operator_registry_flow_serializes_graph_estimates_cost_and_renders_hls(
     custom_hls = render_operator_hls(custom_operator, values)
     assert "Custom scale operator CustomScale" in custom_hls
     assert "scale=3" in custom_hls
+

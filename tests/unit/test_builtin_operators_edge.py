@@ -1,7 +1,7 @@
 import pytest
 
-from edge_lstm.ir.value import Value, ValueType
-from edge_lstm.ops.builtins import (
+from tempo_dag.ir.value import Value, ValueType
+from tempo_dag.ops.builtins import (
     LSTM,
     Add,
     Concat,
@@ -253,3 +253,4 @@ def test_built_in_cost_estimation():
     )
     cost = op_trans.estimate_fpga_cost(values)
     assert cost.bram == 1
+

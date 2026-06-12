@@ -1,6 +1,6 @@
 """Compatibility wrapper for the older public IR operator module."""
 
-from edge_lstm.ir.op import (
+from tempo_dag.ir.op import (
     FPGACost,
     InvalidOperatorDefinitionError,
     InvalidOperatorInstanceError,
@@ -15,3 +15,4 @@ __all__ = [
     "Operator",
     "OperatorError",
 ]
+
