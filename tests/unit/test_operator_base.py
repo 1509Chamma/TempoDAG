@@ -4,13 +4,13 @@ from typing import Any, cast
 
 import pytest
 
-from edge_lstm.ir.op import (
+from tempo_dag.ir.op import (
     FPGACost,
     InvalidOperatorDefinitionError,
     InvalidOperatorInstanceError,
     Operator,
 )
-from edge_lstm.ir.value import Value
+from tempo_dag.ir.value import Value
 
 
 class DummyOperator(Operator):
@@ -103,3 +103,4 @@ def test_invalid_operator_instance_data_raises_clear_error(kwargs, message):
 def test_fpga_cost_rejects_negative_values():
     with pytest.raises(ValueError, match="latency_cycles must be non-negative"):
         FPGACost(latency_cycles=-1)
+

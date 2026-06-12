@@ -2,9 +2,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.ir.op import FPGACost, Operator
-from edge_lstm.ir.validation import (
+from tempo_dag.ir.graph import Graph
+from tempo_dag.ir.op import FPGACost, Operator
+from tempo_dag.ir.validation import (
     GraphValidationError,
     IRValidationError,
     OperatorValidationError,
@@ -12,7 +12,7 @@ from edge_lstm.ir.validation import (
     ValueValidationError,
     validate_ir,
 )
-from edge_lstm.ir.value import Value, ValueType
+from tempo_dag.ir.value import Value, ValueType
 
 
 # Mocked Operator for testing
@@ -221,3 +221,4 @@ def test_custom_operator_extensibility():
 
     with pytest.raises(OperatorValidationError, match="RangeOp output must be 1D"):
         validate_ir(graph)
+

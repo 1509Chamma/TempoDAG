@@ -2,8 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import tensorflow as tf
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.parsers.tensorflow.parser import TensorFlowParser
+from tempo_dag.ir.graph import Graph
+from tempo_dag.parsers.tensorflow.parser import TensorFlowParser
 
 
 def test_tensorflow_parser_init():
@@ -31,3 +31,4 @@ def test_parse_model_calls_tf2onnx(mock_exists, mock_tf2onnx):
     # Assert
     assert isinstance(graph, Graph)
     mock_tf2onnx.assert_called_once()
+

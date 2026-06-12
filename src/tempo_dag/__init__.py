@@ -1,4 +1,4 @@
-"""Canonical public package namespace for EdgeLSTM."""
+"""Canonical public package namespace for TempoDAG."""
 
 from .device import (
     IO,

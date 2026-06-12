@@ -1,6 +1,6 @@
 """Compatibility wrapper for the older public IR registry module."""
 
-from edge_lstm.ir.registry import (
+from tempo_dag.ir.registry import (
     DuplicateOperatorError,
     OperatorRegistry,
     OperatorRegistryError,
@@ -15,3 +15,4 @@ __all__ = [
     "UnknownOperatorError",
     "get_default_registry",
 ]
+

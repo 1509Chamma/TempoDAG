@@ -4,16 +4,16 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.parsers.onnx.parser import ONNXParser
+from tempo_dag.ir.graph import Graph
+from tempo_dag.parsers.onnx.parser import ONNXParser
 
 if TYPE_CHECKING:
-    from edge_lstm.ir.registry import OperatorRegistry
+    from tempo_dag.ir.registry import OperatorRegistry
 
 
 class TensorFlowParser:
     """
-    Translates TensorFlow/Keras models into the EdgeLSTM IR.
+    Translates TensorFlow/Keras models into the TempoDAG IR.
 
     It works by first exporting the model to an ONNX model using tf2onnx,
     and then parsing the resulting ONNX model into an IR Graph.
@@ -36,7 +36,7 @@ class TensorFlowParser:
             **export_kwargs: Additional arguments to pass to tf2onnx.
 
         Returns:
-            An EdgeLSTM IR Graph representation of the model.
+            A TempoDAG IR Graph representation of the model.
         """
         # Delayed imports as TF is heavy and might be missing in some environments
         try:
@@ -67,3 +67,4 @@ class TensorFlowParser:
                 raise RuntimeError("Failed to export TensorFlow model to ONNX.")
 
             return self.onnx_parser.parse(onnx_path)
+

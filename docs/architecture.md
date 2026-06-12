@@ -2,7 +2,7 @@
 
 ## Summary
 
-EdgeLSTM is currently a compiler foundation for sequence-model acceleration on
+TempoDAG is currently a compiler foundation for sequence-model acceleration on
 FPGA targets. The repository already covers model ingestion, IR construction,
 primitive operator modelling, quantization helpers, representative-dataset
 calibration, device metadata, and operator-level HLS template rendering.
@@ -17,13 +17,13 @@ That means `src/` should not appear in consumer imports.
 
 For new public IR-facing imports, prefer:
 
-- `edge_lstm.ir`
-- `edge_lstm.ir.graph`
-- `edge_lstm.ir.value`
-- `edge_lstm.ir.registry`
+- `tempo_dag.ir`
+- `tempo_dag.ir.graph`
+- `tempo_dag.ir.value`
+- `tempo_dag.ir.registry`
 
-The current implementation still lives under `edge_lstm.*`, and that namespace
-remains supported internally. `edge_lstm.ir_graph` is kept as a compatibility
+The current implementation still lives under `tempo_dag.*`, and that namespace
+remains supported internally. `tempo_dag.ir_graph` is kept as a compatibility
 alias for now.
 
 ## Compilation Flow Today
@@ -44,7 +44,7 @@ multi-operator lowering, or board deployment.
 
 ## Package Map
 
-### `src/edge_lstm/ir`
+### `src/tempo_dag/ir`
 
 The IR layer is the heart of the repo:
 
@@ -60,7 +60,7 @@ The IR layer is the heart of the repo:
 This layer is already useful for structural modelling and testing independent of
 any final backend.
 
-### `src/edge_lstm/ops`
+### `src/tempo_dag/ops`
 
 The built-in operator library currently covers a practical primitive set:
 
@@ -75,7 +75,7 @@ The built-in operator library currently covers a practical primitive set:
 Each operator validates its inputs and outputs against the graph value
 environment and exposes a coarse FPGA cost heuristic.
 
-### `src/edge_lstm/parsers`
+### `src/tempo_dag/parsers`
 
 Model ingestion currently works through ONNX:
 
@@ -88,7 +88,7 @@ Model ingestion currently works through ONNX:
 This keeps the ingestion stack narrow and reduces the amount of
 framework-specific lowering logic inside the repo.
 
-### `src/edge_lstm/calibration`
+### `src/tempo_dag/calibration`
 
 The calibration package focuses on representative dataset selection and
 distributional checks for quantization workflows:
@@ -104,7 +104,7 @@ distributional checks for quantization workflows:
 This is a useful bridge between model-side data behaviour and later
 deployment-side quantization choices.
 
-### `src/edge_lstm/codegen/hls`
+### `src/tempo_dag/codegen/hls`
 
 The HLS codegen layer is currently template-driven:
 
@@ -116,7 +116,7 @@ The HLS codegen layer is currently template-driven:
 Today this is operator-scoped code generation, not a full graph scheduler or
 backend flow.
 
-### `src/edge_lstm/device`
+### `src/tempo_dag/device`
 
 The device layer provides structured board metadata:
 
@@ -144,7 +144,7 @@ The current design already exposes several useful seams:
 - Register custom operators with a dedicated `OperatorRegistry`
 - Ship operator-local HLS templates next to Python modules
 - Extend ONNX operator mappings in the parser
-- Add new sampling strategies under `edge_lstm.calibration`
+- Add new sampling strategies under `tempo_dag.calibration`
 - Add new device presets without changing Python code
 
 ## Current Boundaries
@@ -159,3 +159,4 @@ In practice that means:
 - Calibration utilities are real and tested
 - End-to-end recurrent lowering, hardware scheduling, deployment packaging, and
   board execution are still future work
+

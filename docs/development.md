@@ -2,9 +2,9 @@
 
 ## Overview
 
-EdgeLSTM is currently easiest to work on as a Python-first compiler project with
+TempoDAG is currently easiest to work on as a Python-first compiler project with
 lightweight C++ scaffolding around it. Most day-to-day work happens in
-`src/edge_lstm/`, `tests/`, `hls/operators/`, and `configs/devices/`.
+`src/tempo_dag/`, `tests/`, `hls/operators/`, and `configs/devices/`.
 
 Use [Environment Setup](environment-setup.md) first if you have not created a
 local environment yet.
@@ -48,7 +48,7 @@ The current pre-commit behaviour is intentionally simple:
 
 ### IR and Operator Model
 
-Use `src/edge_lstm/ir/` when working on:
+Use `src/tempo_dag/ir/` when working on:
 
 - Graph structure
 - Value metadata
@@ -56,11 +56,11 @@ Use `src/edge_lstm/ir/` when working on:
 - Registry behaviour
 - Validation helpers
 
-Use `src/edge_lstm/ops/` when changing or adding built-in primitive operators.
+Use `src/tempo_dag/ops/` when changing or adding built-in primitive operators.
 
 ### Parsers
 
-Use `src/edge_lstm/parsers/` when changing model ingestion. The repo currently
+Use `src/tempo_dag/parsers/` when changing model ingestion. The repo currently
 prefers a narrow parser stack:
 
 - Direct ONNX support first
@@ -73,8 +73,8 @@ layer will reduce duplicated lowering logic.
 
 Use:
 
-- `src/edge_lstm/calibration/` for representative dataset logic and statistics
-- `src/edge_lstm/quantization_config.py` for quantization specs and attachment
+- `src/tempo_dag/calibration/` for representative dataset logic and statistics
+- `src/tempo_dag/quantization_config.py` for quantization specs and attachment
 
 Calibration code should stay honest about what is data-selection logic versus
 what is full deployment calibration.
@@ -83,7 +83,7 @@ what is full deployment calibration.
 
 Use:
 
-- `src/edge_lstm/codegen/hls/` for template resolution and rendering
+- `src/tempo_dag/codegen/hls/` for template resolution and rendering
 - `hls/operators/` for the operator templates themselves
 
 The current backend is template-driven and operator-scoped. If you introduce a
@@ -91,7 +91,7 @@ new operator, add both Python-side operator support and a matching HLS template.
 
 ### Device Presets
 
-Use `src/edge_lstm/device/` and `configs/devices/` for hardware metadata. This
+Use `src/tempo_dag/device/` and `configs/devices/` for hardware metadata. This
 is the right place to extend board capabilities, memory information, or default
 policy settings.
 
@@ -143,3 +143,4 @@ If you are deciding where to contribute next, the highest-leverage areas are:
 3. Quantization and calibration integration
 4. Broader codegen and validation coverage
 5. Documentation and packaging polish
+

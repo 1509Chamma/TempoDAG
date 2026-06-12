@@ -4,19 +4,19 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Any
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.parsers.onnx.parser import ONNXParser
+from tempo_dag.ir.graph import Graph
+from tempo_dag.parsers.onnx.parser import ONNXParser
 
 if TYPE_CHECKING:
     import torch
     import torch.nn as nn
 
-    from edge_lstm.ir.registry import OperatorRegistry
+    from tempo_dag.ir.registry import OperatorRegistry
 
 
 class PyTorchParser:
     """
-    Translates PyTorch modules into the EdgeLSTM Intermediate Representation (IR).
+    Translates PyTorch modules into the TempoDAG Intermediate Representation (IR).
 
     It works by first exporting the module to an ONNX model and then parsing
     the resulting ONNX model into an IR Graph.
@@ -41,7 +41,7 @@ class PyTorchParser:
             **export_kwargs: Additional arguments to pass to torch.onnx.export.
 
         Returns:
-            An EdgeLSTM IR Graph representation of the module.
+            A TempoDAG IR Graph representation of the module.
         """
         import torch  # Delayed import for performance if not used
 
@@ -66,3 +66,4 @@ class PyTorchParser:
             torch.onnx.export(module, args, onnx_path, **default_kwargs)
 
             return self.onnx_parser.parse(onnx_path)
+

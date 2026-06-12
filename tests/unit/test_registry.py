@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from edge_lstm.device import DeviceRegistry, FPGADevice
+from tempo_dag.device import DeviceRegistry, FPGADevice
 
 
 class TestDeviceRegistry:
@@ -155,3 +155,4 @@ class TestDeviceRegistry:
     def test_registry_invalid_config_dir(self):
         with pytest.raises(RuntimeError, match="does not exist"):
             DeviceRegistry("/nonexistent/path/to/config")
+

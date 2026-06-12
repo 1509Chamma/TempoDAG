@@ -65,13 +65,13 @@ installed.
 Build:
 
 ```bash
-docker build -t edge_lstm .
+docker build -t tempo_dag .
 ```
 
 Run:
 
 ```bash
-docker run --rm -it -v "$PWD:/repo" edge_lstm bash
+docker run --rm -it -v "$PWD:/repo" tempo_dag bash
 ```
 
 ## Notes
@@ -80,3 +80,4 @@ docker run --rm -it -v "$PWD:/repo" edge_lstm bash
   `pip install -e .` workflow.
 - The Python code is the primary development surface today; the native
   scaffolding is present but still minimal.
+

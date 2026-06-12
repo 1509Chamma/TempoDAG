@@ -5,9 +5,9 @@ import pytest
 import torch
 import torch.nn as nn
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.parsers.pytorch.parser import PyTorchParser
-from edge_lstm.parsers.tensorflow.parser import TensorFlowParser
+from tempo_dag.ir.graph import Graph
+from tempo_dag.parsers.pytorch.parser import PyTorchParser
+from tempo_dag.parsers.tensorflow.parser import TensorFlowParser
 
 # PyTorch parser tests
 
@@ -76,3 +76,4 @@ def test_tensorflow_parser_from_function(mock_exists, mock_from_function):
     parser.parse_model(model)
     mock_from_function.assert_called_once()
     assert parser.onnx_parser.parse.call_count == 1
+

@@ -4,19 +4,19 @@ from typing import Any, cast
 
 import pytest
 
-from edge_lstm.ir.op import (
+from tempo_dag.ir.op import (
     FPGACost,
     InvalidOperatorDefinitionError,
     Operator,
 )
-from edge_lstm.ir.registry import (
+from tempo_dag.ir.registry import (
     DuplicateOperatorError,
     OperatorRegistry,
     UnknownOperatorError,
     get_default_registry,
 )
-from edge_lstm.ir.value import Value
-from edge_lstm.ops.builtins import BUILTIN_OPERATOR_TYPES
+from tempo_dag.ir.value import Value
+from tempo_dag.ops.builtins import BUILTIN_OPERATOR_TYPES
 
 
 class ScaleOperator(Operator):
@@ -161,3 +161,4 @@ def test_registry_listing_is_sorted_for_deterministic_output():
     registry.register(BiasOperator)
 
     assert registry.list_registered() == ["Bias", "Scale"]
+

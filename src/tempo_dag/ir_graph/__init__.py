@@ -1,6 +1,6 @@
 """Compatibility alias for the older public ``edge_lstm.ir_graph`` namespace."""
 
-from edge_lstm.ir import (
+from tempo_dag.ir import (
     DuplicateOperatorError,
     FPGACost,
     Graph,
@@ -15,7 +15,7 @@ from edge_lstm.ir import (
     ValueType,
     get_default_registry,
 )
-from edge_lstm.ir.validation import (
+from tempo_dag.ir.validation import (
     GraphValidationError,
     IRValidationError,
     OperatorValidationError,
@@ -55,3 +55,4 @@ __all__ = [
     "validate_topology",
     "validate_values",
 ]
+

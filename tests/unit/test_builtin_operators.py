@@ -1,9 +1,9 @@
 import pytest
 
-from edge_lstm.ir.op import FPGACost, InvalidOperatorInstanceError
-from edge_lstm.ir.registry import get_default_registry
-from edge_lstm.ir.value import Value, ValueType
-from edge_lstm.ops.builtins import Add, Concat, Conv1D, MatMul, Sum
+from tempo_dag.ir.op import FPGACost, InvalidOperatorInstanceError
+from tempo_dag.ir.registry import get_default_registry
+from tempo_dag.ir.value import Value, ValueType
+from tempo_dag.ops.builtins import Add, Concat, Conv1D, MatMul, Sum
 
 
 def make_tensor(value_id, shape, axes=None, dtype="float32"):
@@ -198,3 +198,4 @@ def test_conv1d_rejects_incorrect_output_shape():
         match="Conv1D expects output shape \\[1, 4, 8\\], got \\[1, 4, 7\\]",
     ):
         operator.validate(values)
+

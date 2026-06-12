@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from edge_lstm.device import DeviceRegistry, FPGADevice
+from tempo_dag.device import DeviceRegistry, FPGADevice
 
 
 class TestDeviceRegistryIntegration:
@@ -163,3 +163,4 @@ class TestDeviceRegistryIntegration:
         assert device.io.other_interfaces["ddr4"] == "64GB ECC @ 2400 MT/s"
         assert device.io.other_interfaces["qsfp28"] == "2x 100GbE"
         assert device.policies.power_budget_w == 225.0
+

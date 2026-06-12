@@ -5,16 +5,16 @@ from typing import TYPE_CHECKING, Any
 import onnx
 import onnx.numpy_helper
 
-from edge_lstm.ir.graph import Graph
-from edge_lstm.ir.value import Value, ValueType
+from tempo_dag.ir.graph import Graph
+from tempo_dag.ir.value import Value, ValueType
 
 if TYPE_CHECKING:
-    from edge_lstm.ir.registry import OperatorRegistry
+    from tempo_dag.ir.registry import OperatorRegistry
 
 
 class ONNXParser:
     """
-    Parses ONNX models into the EdgeLSTM Intermediate Representation (IR).
+    Parses ONNX models into the TempoDAG Intermediate Representation (IR).
     """
 
     def __init__(
@@ -239,3 +239,4 @@ class ONNXParser:
         if attr.strings:
             return [s.decode("utf-8") for s in attr.strings]
         return None
+

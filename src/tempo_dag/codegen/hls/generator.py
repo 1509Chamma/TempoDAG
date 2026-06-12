@@ -4,12 +4,12 @@ from pathlib import Path
 from string import Template
 from typing import TYPE_CHECKING
 
-from edge_lstm.ir.op import Operator, OperatorError
+from tempo_dag.ir.op import Operator, OperatorError
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from edge_lstm.ir.value import Value
+    from tempo_dag.ir.value import Value
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[4]
@@ -81,3 +81,4 @@ def _operator_module_file(operator: Operator) -> Path | None:
     if module_file is None:
         return None
     return Path(module_file).resolve()
+

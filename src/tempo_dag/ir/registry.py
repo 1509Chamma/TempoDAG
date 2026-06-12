@@ -78,7 +78,7 @@ class OperatorRegistry:
 def _build_default_registry() -> OperatorRegistry:
     registry = OperatorRegistry()
 
-    from edge_lstm.ops.builtins import register_builtin_operators
+    from tempo_dag.ops.builtins import register_builtin_operators
 
     register_builtin_operators(registry)
     return registry
@@ -93,3 +93,4 @@ def get_default_registry() -> OperatorRegistry:
     if _DEFAULT_REGISTRY_INSTANCE is None:
         _DEFAULT_REGISTRY_INSTANCE = _build_default_registry()
     return _DEFAULT_REGISTRY_INSTANCE
+

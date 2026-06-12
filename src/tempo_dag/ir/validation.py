@@ -3,11 +3,11 @@ from __future__ import annotations
 import collections
 from typing import TYPE_CHECKING
 
-from edge_lstm.ir.value import ValueType
+from tempo_dag.ir.value import ValueType
 
 if TYPE_CHECKING:
-    from edge_lstm.device.board import FPGADevice
-    from edge_lstm.ir.graph import Graph
+    from tempo_dag.device.board import FPGADevice
+    from tempo_dag.ir.graph import Graph
 
 
 class IRValidationError(Exception):
@@ -289,3 +289,4 @@ def validate_ir(graph: Graph, device: FPGADevice | None = None) -> None:
     validate_topology(graph)
     if device:
         validate_fpga_constraints(graph, device)
+
