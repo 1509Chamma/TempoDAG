@@ -1,14 +1,12 @@
 # TempoDAG
 
-TempoDAG is an experimental compiler toolkit for taking time-series models
-toward FPGA-friendly intermediate representations and HLS generation. The
-current repository already has solid core pieces in place for graph modelling,
-operator registration, parser front-ends, quantization support, representative
-dataset calibration, and primitive HLS template rendering.
+TempoDAG is a compiler and verification platform for streaming time-series models represented as stateful temporal dataflow graphs. It transforms PyTorch, TensorFlow, or ONNX models into FPGA-friendly intermediate representations with first-class state management, temporal memory planning, and fixed-point correctness verification.
+
+Rather than treating time-series workloads as ordinary DAGs, TempoDAG explicitly models delayed temporal dependencies, rolling buffers, stateful processing, and streaming optimization targets like initiation interval and steady-state behavior.
 
 It is not yet a full "train model, emit bitstream, deploy to board" toolchain.
-The current focus is building a reliable compiler foundation that recurrent and
-sequence-model lowering can sit on top of.
+The current focus is building a reliable temporal compiler foundation with
+first-class state and delayed-edge semantics before scaling to complex models.
 
 The repo uses a `src/` layout on disk, but `src` is not part of the public
 import path. For IR-facing code, prefer package imports such as
