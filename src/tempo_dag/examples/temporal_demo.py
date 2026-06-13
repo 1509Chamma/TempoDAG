@@ -72,7 +72,8 @@ class RollingMeanConvDemoModel(nn.Module):
         self.buffer = torch.roll(self.buffer, shifts=-1)
         self.buffer[-1] = x.squeeze()
         rolling_mean = self.buffer.mean()
-        conv_like = (rolling_mean * 1.0) + (rolling_mean * 0.5) + (rolling_mean * 1.0)
+        # Match the ONNX demo Conv weights [0.25, 0.5, 0.25] with same padding.
+        conv_like = rolling_mean * 0.5
         output = torch.tensor([conv_like + 0.125], dtype=torch.float32)
         return {
             "outputs": {"output": output},
@@ -125,7 +126,7 @@ def run_demo(output_dir: Path = OUTPUT_DIR) -> TemporalDemoReport:
         metadata={"case": "temporal_demo", "num_steps": len(sequence)},
     )
     validator = GoldenTraceValidator()
-    validation = validator.validate(golden_trace, golden_trace)
+    validation = validator.validate(golden_trace, quantized_trace)
 
     artifact = render_temporal_artifact_from_trace(lowering.process, golden_trace)
 

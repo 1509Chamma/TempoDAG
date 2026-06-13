@@ -41,12 +41,16 @@ def render_temporal_process_hls(process: Process) -> str:
         f"// edge_delta: {edge.source} -> {edge.target} lag={edge.lag_cycles}"
         for edge in process.edge_delta
     ]
+    header_blocks = ["#include <cstddef>", "#include <cstdint>"]
+    if any(
+        _to_cpp_dtype(buffer.dtype) == "half" for buffer in process.buffers.values()
+    ):
+        header_blocks.append("#include <hls_half.h>")
 
     return "\n".join(
         [
             f"// Temporal process: {process.process_id}",
-            "#include <cstddef>",
-            "#include <cstdint>",
+            *header_blocks,
             "",
             *buffer_blocks,
             "",
@@ -64,7 +68,7 @@ def render_temporal_testbench(
     process: Process,
     golden_trace: GoldenTrace,
 ) -> str:
-    """Render a minimal C++ testbench that replays a golden trace."""
+    """Render a minimal C++ scaffold annotated with golden-trace comments."""
 
     lines = [
         f"// Testbench for {process.process_id}",
@@ -76,7 +80,8 @@ def render_temporal_testbench(
         "",
         "int main() {",
         f"  const std::size_t num_steps = {len(golden_trace.steps)};",
-        '  std::cout << "Running temporal golden trace" << std::endl;',
+        '  std::cout << "Running temporal golden trace (" << num_steps',
+        '            << " steps)" << std::endl;',
     ]
 
     for step in golden_trace.steps:
