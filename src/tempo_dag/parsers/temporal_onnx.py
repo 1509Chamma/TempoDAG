@@ -220,7 +220,7 @@ def _materialize_missing_values(graph: Graph) -> None:
                 plural="strides",
                 default=1,
             )
-            dilation = int(operator.attrs.get("dilation", 1))
+            dilation = _coerce_attr_int(operator.attrs.get("dilation"), default=1)
             padding_value = operator.attrs.get(
                 "padding",
                 operator.attrs.get("pads", [0, 0]),
@@ -228,14 +228,11 @@ def _materialize_missing_values(graph: Graph) -> None:
             if isinstance(padding_value, list):
                 padding = int(padding_value[0])
             else:
-                padding = int(padding_value)
+                padding = _coerce_attr_int(padding_value, default=0)
             batch, _, input_length = input_value.shape
             out_channels, _, kernel_width = weight_value.shape
             numerator = (
-                input_length
-                + (2 * padding)
-                - (dilation * (kernel_width - 1))
-                - 1
+                input_length + (2 * padding) - (dilation * (kernel_width - 1)) - 1
             )
             output_length = (numerator // stride) + 1
             output_shape = [batch, out_channels, output_length]
@@ -274,11 +271,21 @@ def _conv_attr_as_int(
     default: int,
 ) -> int:
     if singular in attrs:
-        return int(attrs[singular])
+        return _coerce_attr_int(attrs[singular], default=default)
     plural_value = attrs.get(plural)
     if isinstance(plural_value, list) and plural_value:
         return int(plural_value[0])
     return default
+
+
+def _coerce_attr_int(value: object, *, default: int) -> int:
+    if value is None:
+        return default
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    raise TypeError(f"expected numeric attribute, got {type(value).__name__}")
 
 
 def _dedupe_edge0(edges: list[Edge0]) -> list[Edge0]:
@@ -305,9 +312,7 @@ def _dedupe_edge_delta(edges: list[EdgeDelta]) -> list[EdgeDelta]:
 
 def _promote_initializer_values_to_state(graph: Graph) -> None:
     produced_values = {
-        output_id
-        for operator in graph.ops.values()
-        for output_id in operator.outputs
+        output_id for operator in graph.ops.values() for output_id in operator.outputs
     }
     for value_id, value in graph.values.items():
         if value_id in graph.graph_inputs or value_id in produced_values:

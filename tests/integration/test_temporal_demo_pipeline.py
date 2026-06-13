@@ -1,8 +1,8 @@
 import tempfile
 from pathlib import Path
 
-from examples.temporal_demo import run_demo
 from tempo_dag.codegen.hls.temporal_generator import load_and_render_temporal_artifact
+from tempo_dag.examples.temporal_demo import run_demo
 from tempo_dag.parsers.temporal_onnx import (
     TemporalONNXParser,
     build_demo_temporal_onnx_model,
@@ -22,10 +22,14 @@ def test_temporal_demo_pipeline_emits_artifacts() -> None:
 
 def test_temporal_lowering_connects_to_trace_driven_hls() -> None:
     output_dir = _make_output_dir("hls")
-    process = TemporalONNXParser().parse_model(
-        build_demo_temporal_onnx_model(),
-        process_id="integration_demo",
-    ).process
+    process = (
+        TemporalONNXParser()
+        .parse_model(
+            build_demo_temporal_onnx_model(),
+            process_id="integration_demo",
+        )
+        .process
+    )
     report = run_demo(output_dir)
 
     artifact = load_and_render_temporal_artifact(

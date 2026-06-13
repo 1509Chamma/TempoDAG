@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from os import PathLike
+from pathlib import Path
 
 from tempo_dag.codegen.hls.generator import render_operator_hls
 from tempo_dag.ir_temporal import Process
@@ -74,7 +76,7 @@ def render_temporal_testbench(
         "",
         "int main() {",
         f"  const std::size_t num_steps = {len(golden_trace.steps)};",
-        "  std::cout << \"Running temporal golden trace\" << std::endl;",
+        '  std::cout << "Running temporal golden trace" << std::endl;',
     ]
 
     for step in golden_trace.steps:
@@ -88,7 +90,7 @@ def render_temporal_testbench(
         lines.append(f"  {process.process_id}_step();")
     lines.extend(
         [
-            "  std::cout << \"Temporal testbench complete\" << std::endl;",
+            '  std::cout << "Temporal testbench complete" << std::endl;',
             "  return 0;",
             "}",
             "",
@@ -120,11 +122,11 @@ def render_temporal_artifact_from_trace(
 
 def load_and_render_temporal_artifact(
     process: Process,
-    golden_trace_path: str,
+    golden_trace_path: str | PathLike[str],
 ) -> TemporalHLSArtifact:
     return render_temporal_artifact_from_trace(
         process,
-        load_golden_trace(golden_trace_path),
+        load_golden_trace(Path(golden_trace_path)),
     )
 
 
