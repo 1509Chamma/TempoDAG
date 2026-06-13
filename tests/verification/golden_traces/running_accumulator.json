@@ -1,0 +1,81 @@
+{
+  "metadata": {
+    "case": "running_accumulator",
+    "num_steps": 4
+  },
+  "schema_version": "1.0",
+  "steps": [
+    {
+      "inputs": {
+        "input": [
+          1.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          0.5
+        ]
+      },
+      "state": {
+        "acc": [
+          0.5
+        ]
+      },
+      "timestep": 0
+    },
+    {
+      "inputs": {
+        "input": [
+          2.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          1.5
+        ]
+      },
+      "state": {
+        "acc": [
+          1.5
+        ]
+      },
+      "timestep": 1
+    },
+    {
+      "inputs": {
+        "input": [
+          -1.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          1.0
+        ]
+      },
+      "state": {
+        "acc": [
+          1.0
+        ]
+      },
+      "timestep": 2
+    },
+    {
+      "inputs": {
+        "input": [
+          4.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          3.0
+        ]
+      },
+      "state": {
+        "acc": [
+          3.0
+        ]
+      },
+      "timestep": 3
+    }
+  ]
+}

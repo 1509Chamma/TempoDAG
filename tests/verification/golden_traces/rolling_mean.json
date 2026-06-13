@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "case": "rolling_mean",
+    "num_steps": 4
+  },
+  "schema_version": "1.0",
+  "steps": [
+    {
+      "inputs": {
+        "input": [
+          4.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          1.0
+        ]
+      },
+      "state": {
+        "buffer": [
+          0.0,
+          0.0,
+          0.0,
+          4.0
+        ]
+      },
+      "timestep": 0
+    },
+    {
+      "inputs": {
+        "input": [
+          8.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          3.0
+        ]
+      },
+      "state": {
+        "buffer": [
+          0.0,
+          0.0,
+          4.0,
+          8.0
+        ]
+      },
+      "timestep": 1
+    },
+    {
+      "inputs": {
+        "input": [
+          12.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          6.0
+        ]
+      },
+      "state": {
+        "buffer": [
+          0.0,
+          4.0,
+          8.0,
+          12.0
+        ]
+      },
+      "timestep": 2
+    },
+    {
+      "inputs": {
+        "input": [
+          16.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          7.9375
+        ]
+      },
+      "state": {
+        "buffer": [
+          4.0,
+          8.0,
+          12.0,
+          16.0
+        ]
+      },
+      "timestep": 3
+    }
+  ]
+}

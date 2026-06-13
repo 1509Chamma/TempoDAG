@@ -88,21 +88,21 @@ RollingWindow, ScanCell
 **Deliverable**: `src/tempo_dag/verification/temporal_parity.py`
 
 ### 3.2 Golden Trace Format & Serialization
-- [ ] Define JSON schema for golden traces (timestep, inputs, state, outputs)
-- [ ] Implement `GoldenTraceRecorder` (captures reference runs)
-- [ ] Implement `GoldenTraceValidator` (compares hardware against trace)
-- [ ] Add utilities for trace diffing and error reporting
+- [x] Define JSON schema for golden traces (timestep, inputs, state, outputs)
+- [x] Implement `GoldenTraceRecorder` (captures reference runs)
+- [x] Implement `GoldenTraceValidator` (compares hardware against trace)
+- [x] Add utilities for trace diffing and error reporting
 
 **Deliverable**: `src/tempo_dag/verification/golden_trace.py`
 
 ### 3.3 Bit-Exact Verification Test Suite
-- [ ] Write 5 verification test cases:
-  - [ ] Simple delay chain (Delay -> Delay -> output)
-  - [ ] Rolling mean over 4-timestep window
-  - [ ] Running accumulator (stateful MAC)
-  - [ ] Small GRU cell (state + non-linearity)
-  - [ ] Hybrid: rolling stat + linear output
-- [ ] Each test: PyTorch reference -> temporal IR -> fixed-point oracle ->
+- [x] Write 5 verification test cases:
+  - [x] Simple delay chain (Delay -> Delay -> output)
+  - [x] Rolling mean over 4-timestep window
+  - [x] Running accumulator (stateful MAC)
+  - [x] Small GRU cell (state + non-linearity)
+  - [x] Hybrid: rolling stat + linear output
+- [x] Each test: PyTorch reference -> temporal IR -> fixed-point oracle ->
   golden trace
 
 **Deliverable**: `tests/verification/test_temporal_parity.py` with 5 golden
