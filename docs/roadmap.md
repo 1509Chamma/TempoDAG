@@ -2,81 +2,119 @@
 
 ## Summary
 
-The repository already has a usable compiler core. The roadmap below focuses on
-the work needed to turn that core into a stronger end-to-end FPGA deployment
-story.
+TempoDAG is moving from a useful same-timestep compiler core toward an explicit
+temporal compiler for streaming time-series workloads. The near-term roadmap is
+organized around model stages rather than a single LSTM-focused path.
+
+The current codebase already has the kernel-layer foundation: IR graph
+construction, operator registration, parser frontends, quantization helpers,
+representative-dataset calibration, device metadata, and operator-level HLS
+template rendering. The next work layers temporal state, delayed dependencies,
+verification, and streaming hardware generation on top of that core.
 
 ## Current Baseline
 
-Today the repo already supports:
+Today the repo supports:
 
-- IR graph construction and operator registration
-- Primitive operator validation and coarse FPGA cost heuristics
-- ONNX ingestion with PyTorch and TensorFlow wrappers
-- Quantization spec attachment
-- Representative-dataset calibration utilities
-- Operator-level HLS template rendering
-- Device presets and validation
+- Same-timestep IR graph construction and operator registration.
+- Primitive operator validation and coarse FPGA cost heuristics.
+- ONNX ingestion with PyTorch and TensorFlow wrappers.
+- Quantization spec attachment.
+- Representative-dataset calibration utilities.
+- Operator-level HLS template rendering.
+- Device presets and validation.
+- Temporal process scaffolding with explicit clocks, kernels, state, buffers,
+  same-timestep edges, delayed edges, and validation that same-timestep edges
+  form a DAG.
 
-That is a meaningful foundation, and it gives the roadmap a concrete starting
-point instead of a blank slate.
+## Stage 1: Streaming Stateful Core
 
-## Near-Term Efforts
+This is the current focus. The goal is to prove that TempoDAG can model and
+verify simple streaming workloads with first-class state.
 
-### 1. High-Level Model Lowering
+Models unlocked:
 
-Move from parser coverage toward stronger lowering of sequence-model constructs:
+- FIR and IIR filters.
+- Rolling statistics.
+- AR/MA/ARIMA-style inference.
+- Exponential smoothing.
+- Hybrid feature pipelines with small linear heads.
 
-- Expand recurrent-model handling
-- Lower high-level layers into primitive operator graphs consistently
-- Make graph outputs easier to validate across frameworks
+Compiler capabilities:
 
-### 2. Graph Optimization
+- Temporal IR process, kernel, state, buffer, `Edge0`, and `EdgeDelta`
+  structures.
+- Delay lines and ring buffers.
+- Rolling windows and running accumulators.
+- Fixed-point range metadata for temporal values and state.
+- Golden traces for per-timestep verification.
 
-Add compiler passes that make the IR more hardware-aware:
+## Stage 2: Generic Recurrence And TCN
 
-- Operator fusion where it improves throughput or memory reuse
-- Scheduling hints and latency-aware transforms
-- Buffer planning and state reuse for sequence workloads
+Once the streaming core is stable, the next target is recurrent and causal
+neural sequence models.
 
-### 3. Quantization And Calibration Integration
+Models unlocked:
 
-Build on the new calibration utilities by connecting them more tightly to
-deployment-oriented quantization:
+- GRU.
+- LSTM.
+- Vanilla RNN.
+- Kalman filters.
+- VAR.
+- Causal dilated TCN.
 
-- Persist calibration summaries
-- Add tensor-wise or layer-wise observer flows
-- Feed calibration outputs directly into graph value quantization metadata
+Compiler capabilities:
 
-## Medium-Term Efforts
+- Generic scan/state-threading representation.
+- Pattern recovery for recurrence and causal convolution.
+- Stateful quantization profiles.
+- Per-timestep parity against framework references and fixed-point oracles.
 
-### 4. Codegen Expansion
+## Stage 3: Spectral And Structured State-Space
 
-Move from isolated operator templates toward richer backend generation:
+This stage adds longer-horizon sequence capability while keeping hardware
+structure visible.
 
-- Graph-level HLS emission
-- Template composition across multiple operators
-- Toolchain wrappers for simulation and synthesis
+Models unlocked:
 
-### 5. Hardware Validation
+- FFT and wavelet frontends.
+- DSS and early S4-style kernels.
+- Hybrid DSP plus neural heads.
 
-Strengthen the link between compiler output and real FPGA execution:
+Compiler capabilities:
 
-- Board-specific benchmarking
-- Validation against reference framework outputs
-- Latency and resource reporting against device presets
+- Complex arithmetic.
+- Butterfly-style dataflow.
+- Diagonal state-space updates.
+- Structured recurrent kernels.
 
-### 6. Developer Experience
+## Stage 4: Global Context And Selective SSMs
 
-Make the project easier to adopt and extend:
+Global-context models come after the compiler has a strong story for temporal
+memory, precision, and verification.
 
-- Better packaging metadata
-- CLI workflows for parse, validate, calibrate, and render
-- Tutorials and reproducible examples
+Models unlocked:
 
-## Longer-Term Direction
+- Small quantized transformers.
+- Informer/Autoformer-like models.
+- Mamba-like selective state-space models.
 
-The broader direction is still the same: an open, research-friendly compiler
-path for sequence-model acceleration on FPGA hardware. The difference now is
-that the repo already contains the beginnings of that stack, so future work can
-focus on layering capability instead of replacing the foundation.
+Compiler capabilities:
+
+- Attention and KV-cache state.
+- Selective scan.
+- Memory-aware buffer placement.
+- Long-horizon drift and saturation diagnostics.
+
+## Cross-Cutting Priorities
+
+- Keep `tempo_dag.ir` as the same-timestep kernel layer.
+- Use `tempo_dag.ir_temporal` for streaming processes and delayed
+  dependencies.
+- Strengthen verification around fixed-point oracles and golden traces.
+- Expand HLS from isolated operator templates toward graph-level temporal
+  generation.
+- Keep documentation, examples, and tests aligned with each implemented stage.
+
+For the current implementation checklist, see
+[30-Day Roadmap](roadmap-30day.md).

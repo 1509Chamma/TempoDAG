@@ -298,8 +298,8 @@ The current repo should evolve in this order:
 
 1. Keep the existing IR and operator registry as the same-timestep kernel layer.
 2. Add a new temporal layer rather than overloading the current graph model.
-3. Rename documentation and public story toward temporal dataflow, even if the
-   Python package name remains `edge_lstm` during transition.
+3. Keep documentation and the public story aligned around TempoDAG and temporal
+   dataflow.
 4. Promote `numerical_parity.py` into a compiler verification subsystem.
 5. Add model examples that are not LSTM-specific.
 6. Create a benchmark/report schema before adding many more operators.

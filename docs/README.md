@@ -15,7 +15,7 @@ This folder documents TempoDAG, a compiler for streaming time-series models with
 - [Environment Setup](environment-setup.md): Local environment and hook setup
 
 **Reference**
-- [Roadmap](roadmap.md): Legacy planning (pre-temporal vision)
+- [Roadmap](roadmap.md): Stage-based implementation direction
 - [Temporal IR Guide](temporal-ir-guide.md): Stateful dataflow concepts
 - [Quickstart](temporal-quickstart.md) [coming soon]: First temporal model demo
 

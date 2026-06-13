@@ -17,6 +17,8 @@ import path. For IR-facing code, prefer package imports such as
 What exists today:
 
 - A typed IR centered on `Value`, `Operator`, `Graph`, and `OperatorRegistry`
+- A temporal IR layer for streaming processes, persistent state, bounded
+  buffers, same-timestep dependencies, and delayed temporal edges
 - Built-in primitive operators with validation, coarse FPGA cost estimates, and
   HLS templates under `hls/operators/`
 - ONNX parsing plus PyTorch and TensorFlow wrappers that export through ONNX
@@ -41,6 +43,7 @@ What is still future work:
 |   |-- codegen/hls/     Template resolution and HLS rendering
 |   |-- device/          FPGA device schemas and preset registry
 |   |-- ir/              Graph, values, operators, validation, registry
+|   |-- ir_temporal/     Streaming processes, state, buffers, temporal edges
 |   |-- ops/             Built-in primitive operators
 |   `-- parsers/         ONNX parser plus PyTorch/TensorFlow wrappers
 |-- tests/               Unit and integration coverage

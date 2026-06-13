@@ -1,6 +1,6 @@
 """
-edge_lstm.calibration
-====================
+tempo_dag.calibration
+=====================
 
 Representative dataset generation utilities for quantization calibration.
 

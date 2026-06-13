@@ -22,6 +22,8 @@ class StateKind(Enum):
 
 @dataclass(frozen=True)
 class Clock:
+    """Logical clock domain for a temporal process."""
+
     clock_id: str
     period: int = 1
     unit: str = "cycle"
@@ -36,6 +38,8 @@ class Clock:
 
 @dataclass(frozen=True)
 class Kernel:
+    """A same-timestep acyclic compute region backed by the existing IR graph."""
+
     kernel_id: str
     graph: Graph
     clock_id: str = "main"
@@ -50,6 +54,8 @@ class Kernel:
 
 @dataclass(frozen=True)
 class StateSpec:
+    """Persistent value carried across timesteps."""
+
     state_id: str
     kind: StateKind
     dtype: str
@@ -72,6 +78,8 @@ class StateSpec:
 
 @dataclass(frozen=True)
 class BufferSpec:
+    """Bounded history storage such as a delay line or rolling window."""
+
     buffer_id: str
     dtype: str
     shape: tuple[int, ...]
@@ -94,6 +102,8 @@ class BufferSpec:
 
 @dataclass(frozen=True)
 class Edge0:
+    """Same-timestep dependency between temporal process components."""
+
     source: str
     target: str
     value_id: str | None = None
@@ -108,6 +118,8 @@ class Edge0:
 
 @dataclass(frozen=True)
 class EdgeDelta:
+    """Positive-lag dependency that crosses one or more timesteps."""
+
     source: str
     target: str
     lag_cycles: int
@@ -124,6 +136,8 @@ class EdgeDelta:
 
 @dataclass
 class Process:
+    """Top-level container for a streaming temporal computation."""
+
     process_id: str
     clocks: dict[str, Clock] = field(
         default_factory=lambda: {"main": Clock("main")}
