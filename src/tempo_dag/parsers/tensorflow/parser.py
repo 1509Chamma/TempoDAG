@@ -40,9 +40,8 @@ class TensorFlowParser:
         """
         # Delayed imports as TF is heavy and might be missing in some environments
         try:
-            from tf2onnx import convert
-
             import tensorflow as tf
+            from tf2onnx import convert
         except ImportError:
             raise ImportError(
                 "TensorFlow and tf2onnx are required for TensorFlowParser. "

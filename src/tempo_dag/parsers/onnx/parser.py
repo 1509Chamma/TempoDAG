@@ -142,6 +142,13 @@ class ONNXParser:
             attrs = {
                 attr.name: self._get_onnx_attribute(attr) for attr in node.attribute
             }
+            if onnx_op == "Conv":
+                if isinstance(attrs.get("strides"), list) and attrs["strides"]:
+                    attrs["stride"] = attrs["strides"][0]
+                if isinstance(attrs.get("pads"), list) and attrs["pads"]:
+                    attrs["padding"] = attrs["pads"][0]
+                if isinstance(attrs.get("dilations"), list) and attrs["dilations"]:
+                    attrs["dilation"] = attrs["dilations"][0]
 
             # Special handling for Gemm: Map it to MatMul (+ Add if bias present)
             if onnx_op == "Gemm":

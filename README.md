@@ -19,6 +19,8 @@ What exists today:
 - A typed IR centered on `Value`, `Operator`, `Graph`, and `OperatorRegistry`
 - A temporal IR layer for streaming processes, persistent state, bounded
   buffers, same-timestep dependencies, and delayed temporal edges
+- A temporal ONNX lowering path plus temporal HLS/testbench rendering for the
+  rolling-statistics MVP flow
 - Built-in primitive operators with validation, coarse FPGA cost estimates, and
   HLS templates under `hls/operators/`
 - ONNX parsing plus PyTorch and TensorFlow wrappers that export through ONNX
@@ -105,6 +107,7 @@ Run the same core checks used during development:
 - [Calibration Guide](docs/calibration.md)
 - [Development Guide](docs/development.md)
 - [Environment Setup](docs/environment-setup.md)
+- [Temporal Quickstart](docs/temporal-quickstart.md)
 - [Roadmap](docs/roadmap.md)
 
 ## Future Efforts
