@@ -68,9 +68,9 @@ RollingWindow, ScanCell
 **Deliverable**: Working delay and windowing operators with tests
 
 ### 2.3 Extend Quantization Config for Temporal State
-- [ ] Add `StateQuantSpec` dataclass (dtype, scale, overflow_policy)
-- [ ] Update `NumericalParityConfig` to handle state across timesteps
-- [ ] Create sample fixed-point profiles for rolling statistics
+- [x] Add `StateQuantSpec` dataclass (dtype, scale, overflow_policy)
+- [x] Update `NumericalParityConfig` to handle state across timesteps
+- [x] Create sample fixed-point profiles for rolling statistics
 
 **Deliverable**: Quantization config extends to state values
 

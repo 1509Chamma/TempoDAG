@@ -15,6 +15,7 @@ from tempo_dag.quantization_config import (
     QuantizationScheme,
     QuantizationSpec,
     QuantizationType,
+    StateQuantSpec,
     compute_quant_params,
 )
 
@@ -144,6 +145,7 @@ class NumericalParityConfig:
     fp32_ir: Graph | None = None
     quantized_ir: Graph | None = None
     ranking_metric: str = "max_error"
+    state_quantization: dict[str, StateQuantSpec] = field(default_factory=dict)
 
     @classmethod
     def from_input(
@@ -173,6 +175,9 @@ class NumericalParityConfig:
             fp32_ir=cast("Graph | None", config.get("fp32_ir")),
             quantized_ir=cast("Graph | None", config.get("quantized_ir")),
             ranking_metric=str(config.get("ranking_metric", "max_error")),
+            state_quantization=_coerce_state_quantization(
+                config.get("state_quantization")
+            ),
         )
 
 
@@ -201,6 +206,30 @@ def _coerce_optional_str_sequence(value: object | None) -> tuple[str, ...] | Non
     if isinstance(value, Sequence) and not isinstance(value, str | bytes):
         return tuple(str(item) for item in value)
     raise TypeError("config layer_names must be a sequence of strings")
+
+
+def _coerce_state_quantization(
+    value: object | None,
+) -> dict[str, StateQuantSpec]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("config state_quantization must be a mapping")
+
+    specs: dict[str, StateQuantSpec] = {}
+    for state_id, raw_spec in value.items():
+        if not isinstance(state_id, str):
+            raise TypeError("state_quantization keys must be strings")
+        if isinstance(raw_spec, StateQuantSpec):
+            specs[state_id] = raw_spec
+        elif isinstance(raw_spec, dict):
+            specs[state_id] = StateQuantSpec.from_dict(raw_spec)
+        else:
+            raise TypeError(
+                "state_quantization values must be StateQuantSpec instances "
+                "or dictionaries"
+            )
+    return specs
 
 
 def _coerce_thresholds(value: object | None) -> dict[str, float]:
