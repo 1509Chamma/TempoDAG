@@ -81,4 +81,3 @@ def _operator_module_file(operator: Operator) -> Path | None:
     if module_file is None:
         return None
     return Path(module_file).resolve()
-

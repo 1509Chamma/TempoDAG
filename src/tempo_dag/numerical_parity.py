@@ -209,8 +209,7 @@ def _coerce_thresholds(value: object | None) -> dict[str, float]:
     if not isinstance(value, Mapping):
         raise TypeError("config thresholds must be a mapping")
     return {
-        str(metric): _coerce_float(threshold)
-        for metric, threshold in value.items()
+        str(metric): _coerce_float(threshold) for metric, threshold in value.items()
     }
 
 
@@ -497,16 +496,12 @@ class ONNXRuntimeParityAdapter:
         self.input_names = (
             tuple(input_names)
             if input_names is not None
-            else tuple(
-                value_info.name for value_info in self._session.get_inputs()
-            )
+            else tuple(value_info.name for value_info in self._session.get_inputs())
         )
         self.output_names = (
             tuple(output_names)
             if output_names is not None
-            else tuple(
-                value_info.name for value_info in self._session.get_outputs()
-            )
+            else tuple(value_info.name for value_info in self._session.get_outputs())
         )
         self.layer_output_names = tuple(layer_output_names or ())
         self._parity_layer_model = self
@@ -542,9 +537,7 @@ class ONNXRuntimeParityAdapter:
     ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
         feeds = self._build_feeds(args, kwargs)
         requested_layer_names = (
-            tuple(layer_names)
-            if layer_names is not None
-            else self.layer_output_names
+            tuple(layer_names) if layer_names is not None else self.layer_output_names
         )
         fetch_names = list(self.output_names)
         if capture_layers:
@@ -1221,9 +1214,11 @@ def _normalize_output_structure(output: Any) -> dict[str, np.ndarray]:
             child_map = _normalize_output_structure(value)
             normalized.update(
                 {
-                    f"output.{index}.{child_key}"
-                    if child_key != "output"
-                    else f"output.{index}": child_value
+                    (
+                        f"output.{index}.{child_key}"
+                        if child_key != "output"
+                        else f"output.{index}"
+                    ): child_value
                     for child_key, child_value in child_map.items()
                 }
             )
@@ -1234,9 +1229,11 @@ def _normalize_output_structure(output: Any) -> dict[str, np.ndarray]:
             child_map = _normalize_output_structure(value)
             normalized.update(
                 {
-                    f"output.{index}.{child_key}"
-                    if child_key != "output"
-                    else f"output.{index}": child_value
+                    (
+                        f"output.{index}.{child_key}"
+                        if child_key != "output"
+                        else f"output.{index}"
+                    ): child_value
                     for child_key, child_value in child_map.items()
                 }
             )
@@ -1492,4 +1489,3 @@ __all__ = [
     "quantize_array",
     "run_numerical_parity_test",
 ]
-

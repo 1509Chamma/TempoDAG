@@ -36,8 +36,7 @@ def make_regime_dataset(n: int = 2000, seed: int = 2) -> list[np.ndarray]:
     low = [rng.normal(0, 0.5, 16).astype(np.float32) for _ in range(n // 3)]
     high = [rng.normal(0, 3.0, 16).astype(np.float32) for _ in range(n // 3)]
     tail = [
-        rng.uniform(-20, 20, 16).astype(np.float32)
-        for _ in range(n - 2 * (n // 3))
+        rng.uniform(-20, 20, 16).astype(np.float32) for _ in range(n - 2 * (n // 3))
     ]
     combined = low + high + tail
     rng.shuffle(combined)
@@ -387,4 +386,3 @@ def test_output_preserves_dtype() -> None:
     dataset = [np.zeros(8, dtype=np.float32) for _ in range(100)]
     for arr in create_representative_dataset(dataset, 20):
         assert arr.dtype == np.float32
-

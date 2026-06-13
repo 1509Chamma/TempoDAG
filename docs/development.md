@@ -56,7 +56,33 @@ Use `src/tempo_dag/ir/` when working on:
 - Registry behaviour
 - Validation helpers
 
+Use `src/tempo_dag/ir_temporal/` when working on:
+
+- Streaming process structure
+- Persistent state and bounded history buffers
+- Same-timestep versus positive-lag temporal dependencies
+- Validation that feedback cycles cross timestep boundaries
+
 Use `src/tempo_dag/ops/` when changing or adding built-in primitive operators.
+
+### Temporal Operator Patterns
+
+Temporal operators should make state movement explicit instead of hiding it in
+ordinary tensor edges.
+
+When adding temporal operators:
+
+- Keep pure same-timestep math inside `tempo_dag.ir.Graph` kernels.
+- Represent feedback or recurrence with `EdgeDelta`, not an `Edge0` cycle.
+- Model bounded history with `BufferSpec` before lowering it to implementation
+  details such as shift registers or ring buffers.
+- Model persistent values with `StateSpec` and choose the closest `StateKind`
+  (`hidden_state`, `rolling_buffer`, or `running_stat`).
+- Validate process structure before attaching scheduling, quantization, or HLS
+  metadata.
+
+This keeps the temporal layer analyzable while still reusing the existing
+operator registry and same-timestep graph validation.
 
 ### Parsers
 

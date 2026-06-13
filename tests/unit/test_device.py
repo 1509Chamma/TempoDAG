@@ -229,4 +229,3 @@ class TestFPGADevice:
         basic_device.policies.power_budget_w = -10.0
         with pytest.raises(ValueError, match="power_budget_w.*positive"):
             basic_device.validate()
-

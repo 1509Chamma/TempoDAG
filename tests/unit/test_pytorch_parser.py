@@ -32,4 +32,3 @@ def test_pytorch_parser_converts_simple_module():
     assert "MatMul" in ops_found
     assert "Add" in ops_found
     assert "ReLU" in ops_found
-

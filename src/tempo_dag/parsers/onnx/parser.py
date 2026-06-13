@@ -77,9 +77,9 @@ class ONNXParser:
         """Convert an in-memory ONNX ModelProto to an IR Graph."""
         onnx_graph = model.graph
         values: dict[str, Value] = {}
-        ops: dict[
-            str, Any
-        ] = {}  # Using Any here avoids tighter typing before operator mapping.
+        ops: dict[str, Any] = (
+            {}
+        )  # Using Any here avoids tighter typing before operator mapping.
 
         initializers = {init.name for init in onnx_graph.initializer}
         graph_inputs = []
@@ -239,4 +239,3 @@ class ONNXParser:
         if attr.strings:
             return [s.decode("utf-8") for s in attr.strings]
         return None
-

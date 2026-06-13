@@ -198,4 +198,3 @@ def test_conv1d_rejects_incorrect_output_shape():
         match="Conv1D expects output shape \\[1, 4, 8\\], got \\[1, 4, 7\\]",
     ):
         operator.validate(values)
-

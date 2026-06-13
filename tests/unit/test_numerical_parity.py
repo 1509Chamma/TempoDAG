@@ -391,9 +391,7 @@ def test_tensorflow_keras_adapter_detects_weight_noise() -> None:
     quantized_model.set_weights(fp32_model.get_weights())
 
     kernel, bias = quantized_model.get_layer("dense_output").get_weights()
-    quantized_model.get_layer("dense_output").set_weights(
-        [kernel + 0.15, bias + 0.05]
-    )
+    quantized_model.get_layer("dense_output").set_weights([kernel + 0.15, bias + 0.05])
 
     fp32_adapter = TensorFlowKerasParityAdapter(fp32_model)
     quantized_adapter = TensorFlowKerasParityAdapter(
@@ -430,4 +428,3 @@ def test_tensorflow_keras_adapter_respects_explicit_layer_selection() -> None:
     assert "output" in output_map
     assert "dense_hidden" in layer_map
     assert "dense_output" not in layer_map
-

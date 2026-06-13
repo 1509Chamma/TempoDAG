@@ -15,4 +15,3 @@ __all__ = [
     "UnknownOperatorError",
     "get_default_registry",
 ]
-

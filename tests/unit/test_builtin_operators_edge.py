@@ -253,4 +253,3 @@ def test_built_in_cost_estimation():
     )
     cost = op_trans.estimate_fpga_cost(values)
     assert cost.bram == 1
-

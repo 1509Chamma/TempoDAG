@@ -221,4 +221,3 @@ def test_custom_operator_extensibility():
 
     with pytest.raises(OperatorValidationError, match="RangeOp output must be 1D"):
         validate_ir(graph)
-

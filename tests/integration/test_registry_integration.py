@@ -163,4 +163,3 @@ class TestDeviceRegistryIntegration:
         assert device.io.other_interfaces["ddr4"] == "64GB ECC @ 2400 MT/s"
         assert device.io.other_interfaces["qsfp28"] == "2x 100GbE"
         assert device.policies.power_budget_w == 225.0
-

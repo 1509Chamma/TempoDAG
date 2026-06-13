@@ -1015,4 +1015,3 @@ BUILTIN_OPERATOR_TYPES = [
 def register_builtin_operators(registry: OperatorRegistry) -> None:
     for operator_cls in BUILTIN_OPERATORS:
         registry.register(operator_cls)
-

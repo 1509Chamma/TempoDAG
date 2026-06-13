@@ -289,4 +289,3 @@ def validate_ir(graph: Graph, device: FPGADevice | None = None) -> None:
     validate_topology(graph)
     if device:
         validate_fpga_constraints(graph, device)
-

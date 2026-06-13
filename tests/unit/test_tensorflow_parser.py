@@ -31,4 +31,3 @@ def test_parse_model_calls_tf2onnx(mock_exists, mock_tf2onnx):
     # Assert
     assert isinstance(graph, Graph)
     mock_tf2onnx.assert_called_once()
-
