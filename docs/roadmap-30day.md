@@ -79,11 +79,11 @@ RollingWindow, ScanCell
 ## Week 3: Verification Foundation & Fixed-Point Oracle
 
 ### 3.1 Extend Numerical Parity to Temporal
-- [ ] Create `TemporalParityAdapter` base class
-- [ ] Implement `StreamingPyTorchAdapter`: run PyTorch model
+- [x] Create `TemporalParityAdapter` base class
+- [x] Implement `StreamingPyTorchAdapter`: run PyTorch model
   timestep-by-timestep
-- [ ] Build `FixedPointOracle`: Python fixed-point reference implementation
-- [ ] Trace per-timestep outputs and state
+- [x] Build `FixedPointOracle`: Python fixed-point reference implementation
+- [x] Trace per-timestep outputs and state
 
 **Deliverable**: `src/tempo_dag/verification/temporal_parity.py`
 
