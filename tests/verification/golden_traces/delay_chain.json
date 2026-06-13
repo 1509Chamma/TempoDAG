@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "case": "delay_chain",
+    "num_steps": 4
+  },
+  "schema_version": "1.0",
+  "steps": [
+    {
+      "inputs": {
+        "input": [
+          1.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          0.0
+        ]
+      },
+      "state": {
+        "prev1": [
+          1.0
+        ],
+        "prev2": [
+          0.0
+        ]
+      },
+      "timestep": 0
+    },
+    {
+      "inputs": {
+        "input": [
+          2.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          0.0
+        ]
+      },
+      "state": {
+        "prev1": [
+          2.0
+        ],
+        "prev2": [
+          1.0
+        ]
+      },
+      "timestep": 1
+    },
+    {
+      "inputs": {
+        "input": [
+          3.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          1.0
+        ]
+      },
+      "state": {
+        "prev1": [
+          3.0
+        ],
+        "prev2": [
+          2.0
+        ]
+      },
+      "timestep": 2
+    },
+    {
+      "inputs": {
+        "input": [
+          4.0
+        ]
+      },
+      "outputs": {
+        "output": [
+          2.0
+        ]
+      },
+      "state": {
+        "prev1": [
+          4.0
+        ],
+        "prev2": [
+          3.0
+        ]
+      },
+      "timestep": 3
+    }
+  ]
+}
