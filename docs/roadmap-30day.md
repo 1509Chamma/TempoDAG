@@ -51,26 +51,26 @@ validation
 ## Week 2: Temporal Operator Bridge & State Lowering
 
 ### 2.1 Create Temporal Operator Interface
-- [ ] Define `TemporalOperator` base class (wraps current `Operator`)
-- [ ] Add `temporal_metadata()` method for state threading hints
-- [ ] Implement for built-in ops: Add, MatMul (no state), Delay (stateful)
-- [ ] Pattern detection: identify scan/loop structure in ONNX
+- [x] Define `TemporalOperator` base class (wraps current `Operator`)
+- [x] Add `temporal_metadata()` method for state threading hints
+- [x] Implement for built-in ops: Add, MatMul (no state), Delay (stateful)
+- [x] Pattern detection: identify scan/loop structure in ONNX
 
 **Deliverable**: `src/tempo_dag/ops/temporal_builtins.py` with Delay,
 RollingWindow, ScanCell
 
 ### 2.2 Implement Delay & RollingBuffer Operators
-- [ ] `Delay(value, lag_cycles)`: output is input from N timesteps ago
-- [ ] `RollingWindow(buffer, window_size)`: causal sliding window view
-- [ ] `RollingMean`, `RollingVar`: streaming statistics
-- [ ] Attach fixed-point range metadata to each
+- [x] `Delay(value, lag_cycles)`: output is input from N timesteps ago
+- [x] `RollingWindow(buffer, window_size)`: causal sliding window view
+- [x] `RollingMean`, `RollingVar`: streaming statistics
+- [x] Attach fixed-point range metadata to each
 
 **Deliverable**: Working delay and windowing operators with tests
 
 ### 2.3 Extend Quantization Config for Temporal State
-- [ ] Add `StateQuantSpec` dataclass (dtype, scale, overflow_policy)
-- [ ] Update `NumericalParityConfig` to handle state across timesteps
-- [ ] Create sample fixed-point profiles for rolling statistics
+- [x] Add `StateQuantSpec` dataclass (dtype, scale, overflow_policy)
+- [x] Update `NumericalParityConfig` to handle state across timesteps
+- [x] Create sample fixed-point profiles for rolling statistics
 
 **Deliverable**: Quantization config extends to state values
 

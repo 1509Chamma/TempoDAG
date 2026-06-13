@@ -20,6 +20,12 @@ class QuantizationType(Enum):
     INTEGER = "integer"
 
 
+class OverflowPolicy(Enum):
+    SATURATE = "saturate"
+    WRAP = "wrap"
+    ERROR = "error"
+
+
 @dataclass(frozen=True)
 class FixedPointSpec:
     integer_bits: int
@@ -62,11 +68,66 @@ class QuantizationSpec:
                 )
 
 
+@dataclass(frozen=True)
+class StateQuantSpec:
+    """Quantization metadata for temporal state carried across timesteps."""
+
+    dtype: str
+    scale: float
+    overflow_policy: OverflowPolicy = OverflowPolicy.SATURATE
+    zero_point: int = 0
+    fixed_point: FixedPointSpec | None = None
+
+    def __post_init__(self) -> None:
+        if not self.dtype.strip():
+            raise ValueError("dtype must be non-empty")
+        if self.scale <= 0:
+            raise ValueError("scale must be positive")
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> StateQuantSpec:
+        fixed_point_data = data.get("fixed_point")
+        fixed_point = None
+        if fixed_point_data is not None:
+            if not isinstance(fixed_point_data, dict):
+                raise TypeError("fixed_point must be a dictionary")
+            fixed_point = FixedPointSpec(
+                integer_bits=int(fixed_point_data["integer_bits"]),
+                fractional_bits=int(fixed_point_data["fractional_bits"]),
+            )
+
+        policy_value = data.get("overflow_policy", OverflowPolicy.SATURATE.value)
+        return cls(
+            dtype=str(data["dtype"]),
+            scale=float(data["scale"]),
+            overflow_policy=OverflowPolicy(str(policy_value)),
+            zero_point=int(data.get("zero_point", 0)),
+            fixed_point=fixed_point,
+        )
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "dtype": self.dtype,
+            "scale": self.scale,
+            "overflow_policy": self.overflow_policy.value,
+            "zero_point": self.zero_point,
+            "fixed_point": (
+                {
+                    "integer_bits": self.fixed_point.integer_bits,
+                    "fractional_bits": self.fixed_point.fractional_bits,
+                }
+                if self.fixed_point is not None
+                else None
+            ),
+        }
+
+
 @dataclass
 class QuantizationConfig:
     global_default: QuantizationSpec
     operator_overrides: dict[str, QuantizationSpec] = field(default_factory=dict)
     tensor_overrides: dict[str, QuantizationSpec] = field(default_factory=dict)
+    state_overrides: dict[str, StateQuantSpec] = field(default_factory=dict)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> QuantizationConfig:
@@ -109,9 +170,32 @@ class QuantizationConfig:
         for t_name, t_data in data.get("tensors", {}).items():
             tensors[t_name] = parse_spec(t_data, default=global_spec)
 
+        states = {}
+        for state_name, state_data in data.get("states", {}).items():
+            states[state_name] = StateQuantSpec.from_dict(state_data)
+
         return cls(
-            global_default=global_spec, operator_overrides=ops, tensor_overrides=tensors
+            global_default=global_spec,
+            operator_overrides=ops,
+            tensor_overrides=tensors,
+            state_overrides=states,
         )
+
+
+ROLLING_STAT_STATE_PROFILES: dict[str, StateQuantSpec] = {
+    "rolling_mean_q16": StateQuantSpec(
+        dtype="fixed16",
+        scale=2**-8,
+        overflow_policy=OverflowPolicy.SATURATE,
+        fixed_point=FixedPointSpec(integer_bits=8, fractional_bits=8),
+    ),
+    "rolling_var_q24": StateQuantSpec(
+        dtype="fixed24",
+        scale=2**-12,
+        overflow_policy=OverflowPolicy.SATURATE,
+        fixed_point=FixedPointSpec(integer_bits=12, fractional_bits=12),
+    ),
+}
 
 
 def to_fixed_point(value: float, spec: QuantizationSpec) -> int:

@@ -8,6 +8,7 @@ from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.op import FPGACost, Operator
 from tempo_dag.ir.value import Value, ValueType
 from tempo_dag.numerical_parity import (
+    NumericalParityConfig,
     ONNXRuntimeParityAdapter,
     TensorFlowKerasParityAdapter,
     TorchQuantizedModelSimulator,
@@ -15,8 +16,10 @@ from tempo_dag.numerical_parity import (
 )
 from tempo_dag.quantization_config import (
     FixedPointSpec,
+    OverflowPolicy,
     QuantizationScheme,
     QuantizationSpec,
+    StateQuantSpec,
 )
 
 
@@ -76,6 +79,36 @@ class NonFiniteModel(nn.Module):
         del x
         values = torch.tensor([float("nan")], dtype=torch.float32)
         return self.identity(values)
+
+
+def test_numerical_parity_config_accepts_temporal_state_quantization() -> None:
+    config = NumericalParityConfig.from_input(
+        {
+            "state_quantization": {
+                "hidden": {
+                    "dtype": "fixed16",
+                    "scale": 2**-8,
+                    "overflow_policy": "saturate",
+                    "fixed_point": {"integer_bits": 8, "fractional_bits": 8},
+                },
+                "window": StateQuantSpec(
+                    dtype="fixed24",
+                    scale=2**-12,
+                    overflow_policy=OverflowPolicy.SATURATE,
+                    fixed_point=FixedPointSpec(
+                        integer_bits=12,
+                        fractional_bits=12,
+                    ),
+                ),
+            }
+        }
+    )
+
+    assert config.state_quantization["hidden"].fixed_point == FixedPointSpec(
+        integer_bits=8,
+        fractional_bits=8,
+    )
+    assert config.state_quantization["window"].dtype == "fixed24"
 
 
 class _FakeONNXValueInfo:

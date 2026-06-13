@@ -4,10 +4,13 @@ from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.op import FPGACost, Operator
 from tempo_dag.ir.value import Value, ValueType
 from tempo_dag.quantization_config import (
+    ROLLING_STAT_STATE_PROFILES,
     FixedPointSpec,
+    OverflowPolicy,
     QuantizationConfig,
     QuantizationScheme,
     QuantizationSpec,
+    StateQuantSpec,
     apply_quantization_config,
     compute_quant_params,
     to_fixed_point,
@@ -194,3 +197,56 @@ def test_priority_tensor_over_operator():
         graph.values["v1"].quant is not None
     ), "v1.quant was not set by apply_quantization_config"
     assert graph.values["v1"].quant["bit_width"] == 12
+
+
+def test_state_quant_spec_parses_temporal_state_metadata():
+    spec = StateQuantSpec.from_dict(
+        {
+            "dtype": "fixed16",
+            "scale": 0.125,
+            "zero_point": -1,
+            "overflow_policy": "saturate",
+            "fixed_point": {"integer_bits": 6, "fractional_bits": 10},
+        }
+    )
+
+    assert spec.dtype == "fixed16"
+    assert spec.scale == 0.125
+    assert spec.zero_point == -1
+    assert spec.overflow_policy is OverflowPolicy.SATURATE
+    assert spec.fixed_point == FixedPointSpec(integer_bits=6, fractional_bits=10)
+    assert spec.to_dict()["overflow_policy"] == "saturate"
+
+
+def test_quantization_config_parses_state_overrides():
+    config = QuantizationConfig.from_dict(
+        {
+            "global": {
+                "bit_width": 8,
+                "fixed_point": {"integer_bits": 4, "fractional_bits": 4},
+            },
+            "states": {
+                "rolling_sum": {
+                    "dtype": "fixed24",
+                    "scale": 2**-12,
+                    "overflow_policy": "saturate",
+                    "fixed_point": {"integer_bits": 12, "fractional_bits": 12},
+                }
+            },
+        }
+    )
+
+    assert config.state_overrides["rolling_sum"].dtype == "fixed24"
+    assert config.state_overrides["rolling_sum"].fixed_point == FixedPointSpec(
+        integer_bits=12,
+        fractional_bits=12,
+    )
+
+
+def test_rolling_stat_state_profiles_are_ready_for_temporal_ops():
+    assert ROLLING_STAT_STATE_PROFILES["rolling_mean_q16"].overflow_policy is (
+        OverflowPolicy.SATURATE
+    )
+    assert ROLLING_STAT_STATE_PROFILES["rolling_var_q24"].fixed_point == (
+        FixedPointSpec(integer_bits=12, fractional_bits=12)
+    )
