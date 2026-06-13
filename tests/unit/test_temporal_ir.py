@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import Any, cast
 
 import pytest
 
@@ -65,13 +66,15 @@ def test_temporal_process_serializes_core_components() -> None:
 
     process.validate()
     data = process.to_dict()
+    states = cast(dict[str, dict[str, Any]], data["states"])
+    buffers = cast(dict[str, dict[str, Any]], data["buffers"])
 
     assert data["process_id"] == "streaming_model"
     assert data["clocks"] == {
         "main": {"clock_id": "main", "period": 1, "unit": "cycle"}
     }
-    assert data["states"]["hidden"]["kind"] == "hidden_state"
-    assert data["buffers"]["rolling_window"]["depth"] == 4
+    assert states["hidden"]["kind"] == "hidden_state"
+    assert buffers["rolling_window"]["depth"] == 4
     assert data["edge0"] == [
         {"source": "rolling_window", "target": "feature_kernel", "value_id": "window"}
     ]
@@ -271,5 +274,6 @@ def test_kernel_can_wrap_existing_same_timestep_graph() -> None:
 
     process.validate()
 
-    kernel_dict = process.to_dict()["kernels"]["identity"]
+    kernels = cast(dict[str, dict[str, Any]], process.to_dict()["kernels"])
+    kernel_dict = kernels["identity"]
     assert kernel_dict["graph"]["values"]["x"] == value.to_dict()

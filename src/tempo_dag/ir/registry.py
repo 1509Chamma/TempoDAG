@@ -93,4 +93,3 @@ def get_default_registry() -> OperatorRegistry:
     if _DEFAULT_REGISTRY_INSTANCE is None:
         _DEFAULT_REGISTRY_INSTANCE = _build_default_registry()
     return _DEFAULT_REGISTRY_INSTANCE
-

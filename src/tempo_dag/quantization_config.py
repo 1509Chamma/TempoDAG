@@ -181,10 +181,9 @@ def apply_quantization_config(graph: Graph, config: QuantizationConfig) -> None:
             "scheme": spec.scheme.value,
             "type": spec.qtype.value,
             "integer_bits": spec.fixed_point.integer_bits if spec.fixed_point else None,
-            "fractional_bits": spec.fixed_point.fractional_bits
-            if spec.fixed_point
-            else None,
+            "fractional_bits": (
+                spec.fixed_point.fractional_bits if spec.fixed_point else None
+            ),
             "scale": spec.scale,
             "zero_point": spec.zero_point,
         }
-

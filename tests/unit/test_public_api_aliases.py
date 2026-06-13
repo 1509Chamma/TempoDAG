@@ -35,4 +35,3 @@ def test_edge_lstm_ir_registry_alias_matches_default_registry() -> None:
 
 def test_edge_lstm_ir_graph_remains_compatible_alias() -> None:
     assert GraphCompatibilityAlias is Graph
-

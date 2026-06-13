@@ -225,4 +225,3 @@ def test_op_no_outputs():
     graph = Graph({"v1": make_val("v1")}, {"op1": op}, ["v1"], [])
     with pytest.raises(OperatorValidationError, match="Operator 'op1' has no outputs"):
         validate_operators(graph)
-

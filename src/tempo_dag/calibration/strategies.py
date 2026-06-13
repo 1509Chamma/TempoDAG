@@ -276,9 +276,11 @@ def _kmeans(
         labels = np.argmin(distances, axis=1)
         centroids = np.array(
             [
-                features[labels == cluster_idx].mean(axis=0)
-                if (labels == cluster_idx).any()
-                else centroids[cluster_idx]
+                (
+                    features[labels == cluster_idx].mean(axis=0)
+                    if (labels == cluster_idx).any()
+                    else centroids[cluster_idx]
+                )
                 for cluster_idx in range(k)
             ]
         )

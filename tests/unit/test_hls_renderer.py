@@ -217,4 +217,3 @@ def test_render_operator_hls_empty_context():
     ):
         res = render_operator_hls(EmptyCtxOp(op_id="empty1", inputs=[], outputs=[]), {})
     assert res == "No variables here"
-

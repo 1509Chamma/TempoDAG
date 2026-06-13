@@ -161,4 +161,3 @@ def test_registry_listing_is_sorted_for_deterministic_output():
     registry.register(BiasOperator)
 
     assert registry.list_registered() == ["Bias", "Scale"]
-

@@ -67,4 +67,3 @@ class TensorFlowParser:
                 raise RuntimeError("Failed to export TensorFlow model to ONNX.")
 
             return self.onnx_parser.parse(onnx_path)
-

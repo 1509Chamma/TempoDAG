@@ -103,4 +103,3 @@ def test_invalid_operator_instance_data_raises_clear_error(kwargs, message):
 def test_fpga_cost_rejects_negative_values():
     with pytest.raises(ValueError, match="latency_cycles must be non-negative"):
         FPGACost(latency_cycles=-1)
-

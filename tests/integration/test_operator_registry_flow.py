@@ -160,4 +160,3 @@ def test_operator_registry_flow_serializes_graph_estimates_cost_and_renders_hls(
     custom_hls = render_operator_hls(custom_operator, values)
     assert "Custom scale operator CustomScale" in custom_hls
     assert "scale=3" in custom_hls
-

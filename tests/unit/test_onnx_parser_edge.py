@@ -120,4 +120,3 @@ def test_all_attribute_types(parser):
     assert attrs["floats_val"] == [1.5, 2.5]
     assert attrs["ints_val"] == [1, 2]
     assert attrs["strings_val"] == ["a", "b"]
-

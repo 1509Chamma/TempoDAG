@@ -66,4 +66,3 @@ class PyTorchParser:
             torch.onnx.export(module, args, onnx_path, **default_kwargs)
 
             return self.onnx_parser.parse(onnx_path)
-

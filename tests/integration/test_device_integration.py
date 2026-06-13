@@ -49,4 +49,3 @@ class TestFPGADeviceIntegration:
         assert device3.policies.target_clock_mhz == 150.0
         assert device3.policies.power_budget_w == 40.0
         assert device3.resources.dsps == 6144
-

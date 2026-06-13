@@ -76,4 +76,3 @@ def test_tensorflow_parser_from_function(mock_exists, mock_from_function):
     parser.parse_model(model)
     mock_from_function.assert_called_once()
     assert parser.onnx_parser.parse.call_count == 1
-

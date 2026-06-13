@@ -155,4 +155,3 @@ class TestDeviceRegistry:
     def test_registry_invalid_config_dir(self):
         with pytest.raises(RuntimeError, match="does not exist"):
             DeviceRegistry("/nonexistent/path/to/config")
-

@@ -139,9 +139,7 @@ class Process:
     """Top-level container for a streaming temporal computation."""
 
     process_id: str
-    clocks: dict[str, Clock] = field(
-        default_factory=lambda: {"main": Clock("main")}
-    )
+    clocks: dict[str, Clock] = field(default_factory=lambda: {"main": Clock("main")})
     kernels: dict[str, Kernel] = field(default_factory=dict)
     states: dict[str, StateSpec] = field(default_factory=dict)
     buffers: dict[str, BufferSpec] = field(default_factory=dict)
@@ -238,9 +236,7 @@ def _validate_clocks(process: Process) -> None:
         if not clock.clock_id:
             raise TemporalIRValidationError("clock_id must be non-empty")
         if clock.period < 1:
-            raise TemporalIRValidationError(
-                f"clock '{clock_id}' period must be >= 1"
-            )
+            raise TemporalIRValidationError(f"clock '{clock_id}' period must be >= 1")
 
 
 def _validate_component_clocks(process: Process) -> None:

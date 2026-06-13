@@ -3,4 +3,3 @@
 from tempo_dag.ir.graph import Graph
 
 __all__ = ["Graph"]
-
