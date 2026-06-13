@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 
-from tempo_dag.numerical_parity import quantize_array
+from tempo_dag.numerical_parity import _round_half_away_from_zero, quantize_array
 from tempo_dag.quantization_config import (
     FixedPointSpec,
     OverflowPolicy,
@@ -82,9 +83,14 @@ class StreamingPyTorchAdapter(TemporalParityAdapter):
             eval_method()
 
         steps = []
+        torch_module = _maybe_import_torch()
         for timestep, item in enumerate(sequence):
             prepared_input = _to_model_input(item)
-            raw_result = self.model(prepared_input)
+            no_grad_context = (
+                torch_module.no_grad() if torch_module is not None else nullcontext()
+            )
+            with no_grad_context:
+                raw_result = self.model(prepared_input)
             outputs, state = _normalize_step_result(
                 raw_result,
                 output_name=self.output_name,
@@ -207,10 +213,7 @@ def _normalize_state_value(
 
 
 def _to_model_input(value: object) -> object:
-    try:
-        import torch
-    except ImportError:  # pragma: no cover
-        torch = None
+    torch = _maybe_import_torch()
 
     if torch is not None and isinstance(value, np.ndarray):
         return torch.as_tensor(value, dtype=torch.float32)
@@ -218,14 +221,19 @@ def _to_model_input(value: object) -> object:
 
 
 def _to_numpy(value: object) -> np.ndarray:
-    try:
-        import torch
-    except ImportError:  # pragma: no cover
-        torch = None
+    torch = _maybe_import_torch()
 
     if torch is not None and isinstance(value, torch.Tensor):
         return value.detach().cpu().numpy().astype(np.float64, copy=False)
     return np.asarray(value, dtype=np.float64)
+
+
+def _maybe_import_torch() -> Any | None:
+    try:
+        import torch
+    except ImportError:  # pragma: no cover
+        return None
+    return torch
 
 
 def _state_spec_to_quant_spec(spec: StateQuantSpec) -> QuantizationSpec:
@@ -251,13 +259,17 @@ def _wrap_fixed_point(value: np.ndarray, spec: StateQuantSpec) -> np.ndarray:
         return value.copy()
 
     scale = float(quant_spec.scale or 2.0 ** (-quant_spec.fixed_point.fractional_bits))
+    zero_point = int(quant_spec.zero_point or 0)
     qmin = -(2 ** (quant_spec.bit_width - 1))
     qmax = (2 ** (quant_spec.bit_width - 1)) - 1
     modulus = qmax - qmin + 1
 
-    scaled = np.round(_to_numpy(value) / scale).astype(np.int64, copy=False)
+    scaled = _round_half_away_from_zero((_to_numpy(value) / scale) + zero_point).astype(
+        np.int64,
+        copy=False,
+    )
     wrapped = ((scaled - qmin) % modulus) + qmin
-    return (wrapped.astype(np.float64) - int(quant_spec.zero_point or 0)) * scale
+    return (wrapped.astype(np.float64) - zero_point) * scale
 
 
 __all__ = [

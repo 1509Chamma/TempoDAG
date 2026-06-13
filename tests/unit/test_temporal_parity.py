@@ -72,7 +72,7 @@ def test_streaming_pytorch_adapter_normalizes_tuple_results() -> None:
     assert np.allclose(trace.steps[1].state["hidden"], np.array([2.5]))
 
 
-def test_fixed_point_oracle_quantizes_outputs_and_state() -> None:
+def test_fixed_point_oracle_quantizes_state_when_output_specs_are_absent() -> None:
     trace = TemporalExecutionTrace(
         steps=(
             TemporalTraceStep(
@@ -145,6 +145,7 @@ def test_fixed_point_oracle_wraps_when_requested() -> None:
                 scale=2**-4,
                 overflow_policy=OverflowPolicy.WRAP,
                 fixed_point=FixedPointSpec(integer_bits=4, fractional_bits=4),
+                zero_point=3,
             )
         }
     )

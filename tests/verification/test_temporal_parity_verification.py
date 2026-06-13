@@ -35,7 +35,7 @@ OUTPUT_SPEC = QuantizationSpec(
 
 STATE_SPEC = StateQuantSpec(
     dtype="fixed16",
-    scale=2**-4,
+    scale=2**-8,
     overflow_policy=OverflowPolicy.SATURATE,
     fixed_point=FixedPointSpec(integer_bits=8, fractional_bits=8),
 )
