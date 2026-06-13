@@ -113,35 +113,35 @@ traces
 ## Week 4: MVP Graph Compilation & Demo
 
 ### 4.1 Temporal Graph Lowering (ONNX -> Temporal IR)
-- [ ] Extend ONNX parser to detect scan patterns
-- [ ] Pattern matching: rolling windows, state threading, recurrence
-- [ ] Build `TemporalGraph` from ONNX with state and delay edges
-- [ ] Validation: check DAG property on same-timestep edges
+- [x] Extend ONNX parser to detect scan patterns
+- [x] Pattern matching: rolling windows, state threading, recurrence
+- [x] Build `TemporalGraph` from ONNX with state and delay edges
+- [x] Validation: check DAG property on same-timestep edges
 
 **Deliverable**: `src/tempo_dag/parsers/temporal_onnx.py`
 
 ### 4.2 Operator-Level HLS Generation
-- [ ] Generate HLS for Delay (shift register or FIFO)
-- [ ] Generate HLS for RollingWindow (ring buffer indexing)
-- [ ] Generate HLS for RollingMean, RollingVar (accumulators + normalization)
-- [ ] Attach testbench generation (golden trace -> HLS stimulus)
+- [x] Generate HLS for Delay (shift register or FIFO)
+- [x] Generate HLS for RollingWindow (ring buffer indexing)
+- [x] Generate HLS for RollingMean, RollingVar (accumulators + normalization)
+- [x] Attach testbench generation (golden trace -> HLS stimulus)
 
 **Deliverable**: HLS templates and renderer for temporal operators
 
 ### 4.3 End-to-End Demo Pipeline
-- [ ] Compile: rolling-mean + causal Conv1D -> temporal IR
-- [ ] Quantize: fixed-point specs for state and activations
-- [ ] Verify: golden trace from PyTorch reference
-- [ ] Generate: Vitis HLS C++ with testbench
-- [ ] Report: per-timestep error, state divergence, overflow checks
+- [x] Compile: rolling-mean + causal Conv1D -> temporal IR
+- [x] Quantize: fixed-point specs for state and activations
+- [x] Verify: golden trace from PyTorch reference
+- [x] Generate: Vitis HLS C++ with testbench
+- [x] Report: per-timestep error, state divergence, overflow checks
 
 **Deliverable**: `examples/temporal_demo.py` with report
 
 ### 4.4 Documentation & Developer Guide
-- [ ] Tutorial: "First Temporal Model" (rolling stats + conv)
-- [ ] API reference for temporal IR and operators
-- [ ] Verification guide: how to write golden traces
-- [ ] HLS code generation walkthrough
+- [x] Tutorial: "First Temporal Model" (rolling stats + conv)
+- [x] API reference for temporal IR and operators
+- [x] Verification guide: how to write golden traces
+- [x] HLS code generation walkthrough
 
 **Deliverable**: `docs/temporal-quickstart.md`
 
@@ -151,7 +151,7 @@ traces
 
 ### Quality & Testing
 - [x] Unit tests for all temporal IR classes (validators, edge construction)
-- [ ] Integration tests: ONNX parse -> temporal IR -> HLS -> golden trace
+- [x] Integration tests: ONNX parse -> temporal IR -> HLS -> golden trace
 - [x] Linting with ruff
 - [ ] Coverage: aim for >80% on temporal modules
 
