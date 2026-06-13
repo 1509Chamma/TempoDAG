@@ -54,7 +54,7 @@ validation
 - [x] Define `TemporalOperator` base class (wraps current `Operator`)
 - [x] Add `temporal_metadata()` method for state threading hints
 - [x] Implement for built-in ops: Add, MatMul (no state), Delay (stateful)
-- [ ] Pattern detection: identify scan/loop structure in ONNX
+- [x] Pattern detection: identify scan/loop structure in ONNX
 
 **Deliverable**: `src/tempo_dag/ops/temporal_builtins.py` with Delay,
 RollingWindow, ScanCell

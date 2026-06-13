@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import onnx
@@ -10,6 +11,28 @@ from tempo_dag.ir.value import Value, ValueType
 
 if TYPE_CHECKING:
     from tempo_dag.ir.registry import OperatorRegistry
+
+
+@dataclass(frozen=True)
+class ONNXTemporalPattern:
+    """Detected ONNX structure that should lower through temporal IR."""
+
+    node_name: str
+    op_type: str
+    inputs: tuple[str, ...]
+    outputs: tuple[str, ...]
+    stateful_inputs: tuple[str, ...]
+    body_node_count: int = 0
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "node_name": self.node_name,
+            "op_type": self.op_type,
+            "inputs": list(self.inputs),
+            "outputs": list(self.outputs),
+            "stateful_inputs": list(self.stateful_inputs),
+            "body_node_count": self.body_node_count,
+        }
 
 
 class ONNXParser:
@@ -202,6 +225,36 @@ class ONNXParser:
 
         return ir_graph
 
+    def detect_temporal_patterns(
+        self, model: onnx.ModelProto
+    ) -> list[ONNXTemporalPattern]:
+        """Identify ONNX nodes that represent loops, scans, or recurrent state."""
+
+        patterns = []
+        for node in model.graph.node:
+            if node.op_type in {"Scan", "Loop"}:
+                patterns.append(
+                    ONNXTemporalPattern(
+                        node_name=node.name or f"{node.op_type}_{len(patterns)}",
+                        op_type=node.op_type,
+                        inputs=tuple(node.input),
+                        outputs=tuple(node.output),
+                        stateful_inputs=_loop_state_inputs(node),
+                        body_node_count=_body_node_count(node),
+                    )
+                )
+            elif node.op_type in {"LSTM", "GRU", "RNN"}:
+                patterns.append(
+                    ONNXTemporalPattern(
+                        node_name=node.name or f"{node.op_type}_{len(patterns)}",
+                        op_type=node.op_type,
+                        inputs=tuple(node.input),
+                        outputs=tuple(node.output),
+                        stateful_inputs=_recurrent_state_inputs(node),
+                    )
+                )
+        return patterns
+
     def _get_onnx_shape(self, tensor_type) -> list[int]:
         shape = []
         for dim in tensor_type.shape.dim:
@@ -239,3 +292,32 @@ class ONNXParser:
         if attr.strings:
             return [s.decode("utf-8") for s in attr.strings]
         return None
+
+
+def _body_node_count(node: onnx.NodeProto) -> int:
+    for attr in node.attribute:
+        if attr.name == "body" and attr.HasField("g"):
+            return len(attr.g.node)
+    return 0
+
+
+def _loop_state_inputs(node: onnx.NodeProto) -> tuple[str, ...]:
+    if node.op_type == "Loop":
+        return tuple(input_id for input_id in node.input[2:] if input_id)
+    if node.op_type == "Scan":
+        num_scan_inputs = _int_attribute(node, "num_scan_inputs", default=0)
+        state_count = max(0, len(node.input) - num_scan_inputs)
+        return tuple(input_id for input_id in node.input[:state_count] if input_id)
+    return ()
+
+
+def _recurrent_state_inputs(node: onnx.NodeProto) -> tuple[str, ...]:
+    # ONNX recurrent ops reserve optional initial state inputs after weights/biases.
+    return tuple(input_id for input_id in node.input[5:] if input_id)
+
+
+def _int_attribute(node: onnx.NodeProto, name: str, *, default: int) -> int:
+    for attr in node.attribute:
+        if attr.name == name and attr.HasField("i"):
+            return int(attr.i)
+    return default
