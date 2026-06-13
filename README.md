@@ -58,7 +58,7 @@ workflow. Python 3.12 is the intended development target.
 Windows PowerShell:
 
 ```powershell
-python -m venv .venv
+py -3.12 -m venv .venv
 . .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 ```

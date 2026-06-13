@@ -56,6 +56,13 @@ Use `src/tempo_dag/ir/` when working on:
 - Registry behaviour
 - Validation helpers
 
+Use `src/tempo_dag/ir_temporal/` when working on:
+
+- Streaming process structure
+- Persistent state and bounded history buffers
+- Same-timestep versus positive-lag temporal dependencies
+- Validation that feedback cycles cross timestep boundaries
+
 Use `src/tempo_dag/ops/` when changing or adding built-in primitive operators.
 
 ### Parsers

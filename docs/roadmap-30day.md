@@ -9,18 +9,18 @@
 ## Week 1: Temporal IR Scaffolding & Architecture
 
 ### 1.1 Define Temporal IR Data Structures
-- [ ] **Process**: Streaming component with one or more logical clocks
-  - [ ] Single-clock entry point (common case)
-  - [ ] Multi-clock support planned but deferred
-- [ ] **Kernel**: Acyclic same-timestep tensor/dataflow region (reuse current IR)
-- [ ] **State**: Persistent structured values
-  - [ ] HiddenState (for RNN/GRU)
-  - [ ] RollingBuffer (for windows/delays)
-  - [ ] RunningStat (for rolling mean/var)
-- [ ] **Buffer**: Bounded history (delay lines, ring buffers, rolling windows)
-- [ ] **Edge0**: Same-timestep dependency (reuse current edge model)
-- [ ] **EdgeDelta**: Positive-lag temporal dependency (new)
-- [ ] Enforce invariant: same-timestep edges form DAG; cycles must use EdgeDelta
+- [x] **Process**: Streaming component with one or more logical clocks
+  - [x] Single-clock entry point (common case)
+  - [x] Multi-clock support planned but deferred
+- [x] **Kernel**: Acyclic same-timestep tensor/dataflow region (reuse current IR)
+- [x] **State**: Persistent structured values
+  - [x] HiddenState (for RNN/GRU)
+  - [x] RollingBuffer (for windows/delays)
+  - [x] RunningStat (for rolling mean/var)
+- [x] **Buffer**: Bounded history (delay lines, ring buffers, rolling windows)
+- [x] **Edge0**: Same-timestep dependency (reuse current edge model)
+- [x] **EdgeDelta**: Positive-lag temporal dependency (new)
+- [x] Enforce invariant: same-timestep edges form DAG; cycles must use EdgeDelta
 
 **Deliverable**: `src/tempo_dag/ir_temporal/` module with typed dataclasses and validation
 

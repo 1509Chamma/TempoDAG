@@ -21,6 +21,7 @@ For new public IR-facing imports, prefer:
 - `tempo_dag.ir.graph`
 - `tempo_dag.ir.value`
 - `tempo_dag.ir.registry`
+- `tempo_dag.ir_temporal`
 
 The current implementation still lives under `tempo_dag.*`, and that namespace
 remains supported internally. `tempo_dag.ir_graph` is kept as a compatibility
@@ -39,8 +40,9 @@ The current end-to-end flow is:
 5. Pair the graph with board metadata from the device registry when reasoning
    about hardware targets.
 
-This is a strong baseline, but it is still short of graph-level scheduling,
-multi-operator lowering, or board deployment.
+This is a strong baseline. The temporal IR layer adds process-level structure
+above the existing same-timestep graph, but the project is still short of
+graph-level scheduling, multi-operator lowering, or board deployment.
 
 ## Package Map
 
@@ -59,6 +61,24 @@ The IR layer is the heart of the repo:
 
 This layer is already useful for structural modelling and testing independent of
 any final backend.
+
+### `src/tempo_dag/ir_temporal`
+
+The temporal IR layer models streaming execution across timesteps while reusing
+the existing `tempo_dag.ir.Graph` as the same-timestep kernel representation:
+
+- `Process` groups clocks, kernels, state, buffers, and temporal edges.
+- `Kernel` wraps an acyclic same-timestep graph.
+- `StateSpec` describes persistent values such as hidden state, rolling
+  buffers, and running statistics.
+- `BufferSpec` describes bounded history storage such as delay lines and window
+  buffers.
+- `Edge0` represents same-timestep dependencies that must form a DAG.
+- `EdgeDelta` represents positive-lag temporal dependencies and is the only
+  legal way to express feedback cycles.
+
+This makes temporal state explicit without replacing the current operator and
+graph model.
 
 ### `src/tempo_dag/ops`
 
@@ -144,6 +164,7 @@ The current design already exposes several useful seams:
 - Register custom operators with a dedicated `OperatorRegistry`
 - Ship operator-local HLS templates next to Python modules
 - Extend ONNX operator mappings in the parser
+- Build streaming processes with `tempo_dag.ir_temporal.Process`
 - Add new sampling strategies under `tempo_dag.calibration`
 - Add new device presets without changing Python code
 
@@ -155,6 +176,8 @@ currently stronger on front-end modelling than on final hardware emission.
 In practice that means:
 
 - IR construction is real and tested
+- Temporal process scaffolding and same-timestep DAG validation are real and
+  tested
 - Operator validation and template rendering are real and tested
 - Calibration utilities are real and tested
 - End-to-end recurrent lowering, hardware scheduling, deployment packaging, and
