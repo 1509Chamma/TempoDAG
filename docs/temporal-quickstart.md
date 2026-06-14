@@ -6,6 +6,8 @@ This guide walks through the Week 4 MVP path in TempoDAG:
 2. Lower it into `tempo_dag.ir_temporal.Process`.
 3. Generate a golden trace from a timestep-by-timestep PyTorch reference.
 4. Emit temporal HLS C++ plus a simple testbench.
+5. Write a graph-level artifact bundle with a manifest tying the process,
+   golden trace, generated HLS, and testbench together.
 
 ## Supported MVP Path
 
@@ -36,7 +38,13 @@ The demo writes artifacts to `examples/generated/`:
 - `temporal_demo_trace.json`
 - `temporal_demo.cpp`
 - `temporal_demo_tb.cpp`
+- `temporal_demo_manifest.json`
 - `temporal_demo_report.json`
+
+The manifest is the stable entry point for generated artifacts. It lists the
+temporal process JSON, golden trace, generated process HLS, and generated
+testbench for the same pipeline so downstream notebooks, reports, and future
+HLS scripts do not need to rediscover file names.
 
 ## API Reference
 
@@ -44,6 +52,7 @@ Key Week 4 entry points:
 
 - `tempo_dag.parsers.temporal_onnx.TemporalONNXParser`
 - `tempo_dag.parsers.temporal_onnx.build_demo_temporal_onnx_model`
+- `tempo_dag.codegen.hls.temporal_generator.write_temporal_hls_artifact_bundle`
 - `tempo_dag.codegen.hls.temporal_generator.render_temporal_process_hls`
 - `tempo_dag.codegen.hls.temporal_generator.render_temporal_testbench`
 - `tempo_dag.verification.temporal_parity.StreamingPyTorchAdapter`
@@ -61,11 +70,14 @@ The verification ladder for the MVP is:
 
 ## HLS Walkthrough
 
-The temporal HLS generator produces two artifacts:
+The temporal HLS bundle writer produces a graph-level artifact package:
 
-- a top-level process wrapper with buffer declarations and rendered operator
-  kernels
-- a testbench that replays each timestep from a golden trace
+- a temporal process JSON file
+- a golden trace JSON file
+- a top-level process wrapper with buffer declarations, contract comments, and
+  rendered operator kernels
+- a testbench that replays each timestep from the golden trace
+- a manifest that records the artifact paths and process identifier
 
 The generated C++ is intentionally transparent and inspection-friendly. It is
 meant to prove the process/codegen interface and testbench wiring before the
@@ -80,5 +92,6 @@ ONNX model
   -> StreamingPyTorchAdapter
   -> FixedPointOracle
   -> GoldenTraceRecorder
-  -> render_temporal_process_hls + render_temporal_testbench
+  -> write_temporal_hls_artifact_bundle
+  -> process JSON + golden trace + HLS + testbench + manifest
 ```
