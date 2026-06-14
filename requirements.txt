@@ -11,7 +11,7 @@ flatbuffers==25.12.19
 fsspec==2026.3.0
 gast==0.7.0
 google-pasta==0.2.0
-grpcio==1.78.0
+grpcio==1.81.1
 h5py==3.14.0
 idna==3.18
 iniconfig==2.3.0
