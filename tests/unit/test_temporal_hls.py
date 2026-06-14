@@ -117,6 +117,6 @@ def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:
             files[TemporalArtifactKind.MANIFEST_JSON].read_text()
         )
         assert manifest_payload["process_id"] == "demo_process"
-        assert {
-            item["kind"] for item in manifest_payload["files"]
-        } == {kind.value for kind in TemporalArtifactKind}
+        assert {item["kind"] for item in manifest_payload["files"]} == {
+            kind.value for kind in TemporalArtifactKind
+        }
