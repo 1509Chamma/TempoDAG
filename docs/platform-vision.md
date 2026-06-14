@@ -104,13 +104,32 @@ The future stack should have five layers.
 
 3. Optimization
 
-   The optimizer should jointly reason about implementation modes, fusion,
-   temporal schedule, precision, buffer placement, and state lifetime.
+   The optimizer should be split into two linked optimization problems.
 
-   The research suggests two complementary solvers:
+   First, the temporal graph optimizer rewrites the model-level structure:
+   fusion, recurrence boundaries, buffer sharing, state placement, fixed-point
+   specialization, and legal retiming across delayed edges.
 
-   - An exact CP-SAT/MILP-style oracle for small cells and hot subgraphs.
-   - A scalable retiming-aware large-neighborhood search for full models.
+   Second, the HLS directive optimizer chooses Vitis implementation controls:
+   pipeline targets, dataflow regions, unroll factors, array partitioning,
+   storage binding, stream depths, and inlining choices.
+
+   The novel platform claim is the combination: optimize the temporal graph
+   first, then optimize the HLS directives that implement that graph. This lets
+   TempoDAG separate graph-structure gains from directive-tuning gains while
+   still reporting the combined inference speedup.
+
+   The research suggests complementary solvers:
+
+   - An exact CP-SAT/MILP-style oracle for small cells, recurrence-critical
+     regions, and directive choices with a small search space.
+   - A scalable retiming-aware large-neighborhood search for full temporal
+     graphs and larger directive plans.
+
+   Any graph rewrite that fuses nodes must preserve model parameters as
+   explicit named constants, state, or immutable parameter blocks. Fusion may
+   change where weights are stored or how they are indexed, but it must not
+   silently change learned values, quantization metadata, or parameter identity.
 
 4. Verification
 
@@ -292,6 +311,55 @@ Minimum deliverables:
 - HLS generation for one streaming graph.
 - End-to-end parity report.
 
+## Competition Focus
+
+For the AMD Open Hardware competition, the platform should stay centered on a
+working hardware story:
+
+> Temporal graph in, optimized graph plus optimized HLS directives out, with
+> fixed-point parity and inference-performance evidence.
+
+That means the optimization research should serve the demo rather than replace
+it. The strongest route is to show that temporal-aware scheduling reduces
+initiation interval, buffer pressure, or memory traffic on a real streaming
+workload, then verify the generated HLS/RTL behavior against golden traces.
+
+The first-place-oriented path is therefore:
+
+1. Make the temporal semantics and HLS block contract clear.
+2. Generate graph-level HLS for a focused workload.
+3. Add a baseline scheduler and report estimated throughput/resources.
+4. Add temporal graph optimization and show graph-only before/after gains.
+5. Add HLS directive optimization and show directive-only plus combined gains.
+6. Validate correctness with fixed-point, HLS simulation, and eventually RTL or
+   hardware-emulation traces.
+
+Research into exact optimization, complexity, and proofs is useful because it
+can sharpen the scheduler and novelty claim. It should not delay the first
+working board-aware demo.
+
+The competition application should be a focused stateful streaming workload
+rather than a generic model zoo. Quant-finance streaming inference is a strong
+candidate because recorded or synthetic market-data streams naturally exercise
+rolling features, temporal state, model inference, and decision logic. The
+baselines should progress from Python inference, to existing software-library
+inference, to hls4ml where the model shape is supported, to naive generated
+HLS, to TempoDAG's optimized HLS schedule.
+
+The hls4ml comparison should be framed carefully. hls4ml is a strong model-level
+FPGA inference baseline. TempoDAG's differentiator should be whole-pipeline
+temporal optimization: rolling features, state buffers, model inference,
+decision logic, graph rewrites, directive tuning, fixed-point parity, and HLS
+scheduling evidence in one reproducible flow.
+
+For cost and reproducibility, the first board target should be the cheapest
+credible AMD platform available to the project. The default recommendation is
+Kria KV260 unless the demo needs KR260-specific I/O or networking. The repo can
+stay AMD-competition focused through submission and rebrand or broaden after
+the contest. Buy the board after the software demo can replay a market trace,
+generate stable HLS for one pipeline, and produce a parity report; before that,
+simulation and artifact generation are enough to move quickly.
+
 ## Immediate Repository Implications
 
 The current repo should evolve in this order:
@@ -322,10 +390,11 @@ The current repo should evolve in this order:
 
 This vision synthesizes the uploaded reports in `research/`:
 
-- `deep-research-report.md`: temporal DAG mapping and scheduling.
-- `deep-research-report (1).md`: AMD Open Hardware winner patterns.
-- `deep-research-report (2).md`: prior-art gap for temporal/stateful ML
-  compilation.
-- `deep-research-report (3).md`: time-series model roadmap.
-- `deep-research-report (4).md`: fixed-point verification framework.
-- `deep-research-report (5).md`: temporal IR design.
+- `temporal-dag-mapping-and-scheduling.md`: temporal DAG mapping and
+  scheduling.
+- `amd-open-hardware-winners-2023-2025.md`: AMD Open Hardware winner patterns.
+- `temporal-stateful-ml-compilation-landscape.md`: prior-art gap for
+  temporal/stateful ML compilation.
+- `fpga-time-series-model-roadmap.md`: time-series model roadmap.
+- `fixed-point-verification-framework.md`: fixed-point verification framework.
+- `temporal-ir-design.md`: temporal IR design.
