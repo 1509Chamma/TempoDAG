@@ -39,7 +39,7 @@ pluggy==1.6.0
 protobuf==7.34.1
 Pygments==2.20.0
 pyrefly==0.51.2
-pytest==9.0.3
+pytest==9.1.0
 pytest-cov==7.1.0
 pytokens==0.4.1
 requests==2.33.0
