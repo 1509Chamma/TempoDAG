@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from enum import Enum
 from os import PathLike
 from pathlib import Path
 
@@ -13,12 +15,50 @@ from tempo_dag.ir_temporal import (
 from tempo_dag.verification.golden_trace import GoldenTrace, load_golden_trace
 
 
+class TemporalArtifactKind(Enum):
+    """Known graph-level temporal artifact categories."""
+
+    PROCESS_JSON = "process_json"
+    GOLDEN_TRACE_JSON = "golden_trace_json"
+    PROCESS_HLS = "process_hls"
+    TESTBENCH_HLS = "testbench_hls"
+    MANIFEST_JSON = "manifest_json"
+
+
+@dataclass(frozen=True)
+class TemporalArtifactFile:
+    """One file emitted for a graph-level temporal HLS bundle."""
+
+    kind: TemporalArtifactKind
+    path: Path
+
+    def to_dict(self, root: Path) -> dict[str, str]:
+        return {
+            "kind": self.kind.value,
+            "path": self.path.relative_to(root).as_posix(),
+        }
+
+
 @dataclass(frozen=True)
 class TemporalHLSArtifact:
     """Rendered temporal HLS bundle for a Process."""
 
     process_hls: str
     testbench_hls: str
+
+
+@dataclass(frozen=True)
+class TemporalHLSArtifactManifest:
+    """Manifest for a graph-level temporal HLS artifact bundle."""
+
+    process_id: str
+    files: tuple[TemporalArtifactFile, ...]
+
+    def to_dict(self, root: Path) -> dict[str, object]:
+        return {
+            "process_id": self.process_id,
+            "files": [artifact.to_dict(root) for artifact in self.files],
+        }
 
 
 def render_temporal_process_hls(process: Process) -> str:
@@ -150,6 +190,54 @@ def render_temporal_artifact_from_trace(
     )
 
 
+def write_temporal_hls_artifact_bundle(
+    process: Process,
+    golden_trace: GoldenTrace,
+    output_dir: str | PathLike[str],
+    *,
+    stem: str | None = None,
+) -> TemporalHLSArtifactManifest:
+    """Write process, trace, HLS, testbench, and manifest artifacts."""
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    artifact_stem = stem or process.process_id
+    rendered = render_temporal_artifact_from_trace(process, golden_trace)
+
+    process_path = output_path / f"{artifact_stem}_process.json"
+    trace_path = output_path / f"{artifact_stem}_trace.json"
+    hls_path = output_path / f"{artifact_stem}.cpp"
+    testbench_path = output_path / f"{artifact_stem}_tb.cpp"
+    manifest_path = output_path / f"{artifact_stem}_manifest.json"
+
+    process_path.write_text(
+        json.dumps(process.to_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    trace_path.write_text(
+        json.dumps(golden_trace.to_dict(), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    hls_path.write_text(rendered.process_hls, encoding="utf-8")
+    testbench_path.write_text(rendered.testbench_hls, encoding="utf-8")
+
+    manifest = TemporalHLSArtifactManifest(
+        process_id=process.process_id,
+        files=(
+            TemporalArtifactFile(TemporalArtifactKind.PROCESS_JSON, process_path),
+            TemporalArtifactFile(TemporalArtifactKind.GOLDEN_TRACE_JSON, trace_path),
+            TemporalArtifactFile(TemporalArtifactKind.PROCESS_HLS, hls_path),
+            TemporalArtifactFile(TemporalArtifactKind.TESTBENCH_HLS, testbench_path),
+            TemporalArtifactFile(TemporalArtifactKind.MANIFEST_JSON, manifest_path),
+        ),
+    )
+    manifest_path.write_text(
+        json.dumps(manifest.to_dict(output_path), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return manifest
+
+
 def load_and_render_temporal_artifact(
     process: Process,
     golden_trace_path: str | PathLike[str],
@@ -161,9 +249,13 @@ def load_and_render_temporal_artifact(
 
 
 __all__ = [
+    "TemporalArtifactFile",
+    "TemporalArtifactKind",
     "TemporalHLSArtifact",
+    "TemporalHLSArtifactManifest",
     "load_and_render_temporal_artifact",
     "render_temporal_artifact_from_trace",
     "render_temporal_process_hls",
     "render_temporal_testbench",
+    "write_temporal_hls_artifact_bundle",
 ]
