@@ -83,6 +83,46 @@ The generated C++ is intentionally transparent and inspection-friendly. It is
 meant to prove the process/codegen interface and testbench wiring before the
 project grows a richer temporal scheduler.
 
+## HLS Milestone 2 Compile Contract
+
+The current HLS layer is no longer only a text renderer. Unit tests now render
+representative operator templates into real C++ translation units and compile
+them with a standard C++17 compiler using `-fsyntax-only`. This gives the
+project a fast CI check that catches broken template syntax without requiring a
+Vitis or Vivado installation.
+
+The compile-smoke contract currently covers:
+
+- scalar/tensor elementwise kernels: `Add`, `Sub`, `Mul`, `Div`, `Sigmoid`,
+  `Tanh`, `ReLU`, and `GELU`
+- reductions: `Sum`, `Mean`, and `Max`
+- structural kernels: `MatMul`, `Transpose`, `Reshape`, `Concat`, `Slice`,
+  `Pad`, and `Shift`
+- temporal/model kernels: `Softmax`, `LayerNorm`, `Conv1D`, `LSTM`, and the
+  generated temporal process/testbench pair
+
+This is still a baseline HLS ABI, not the final optimized accelerator ABI. The
+templates are written to be readable, pragma-ready, and compiler-checkable so
+the next scheduler layer has a stable target.
+
+## Supported HLS Subset
+
+The Python IR validates a broader graph vocabulary than the first HLS template
+set can lower. The current compiler-checked HLS subset intentionally supports:
+
+- `float32` operator examples in the compile-smoke suite
+- rank-2 matrix `MatMul`
+- rank-2 `Transpose` with `perm=[1, 0]`
+- rank-1 `Slice`, `Pad`, and `Shift`
+- flattened reductions where the reduced dimension is contiguous in the
+  generated layout
+- `Conv1D` in `[batch, channel, time]` layout with static shapes
+- `LSTM` with `X`, `W`, `R`, optional `B`, and the primary `Y` output
+
+Unsupported HLS forms raise explicit render-time errors rather than emitting
+misleading C++. The next graph scheduler should replace those narrow cases with
+shape-aware address generation and a consistent operator invocation ABI.
+
 ## Sequence Overview
 
 ```text

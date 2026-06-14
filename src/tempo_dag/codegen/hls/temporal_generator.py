@@ -108,8 +108,10 @@ def render_temporal_process_hls(process: Process) -> str:
             "",
             *edge_delta_comments,
             "",
+            *[line for block in operator_blocks for line in block.splitlines()],
+            "",
             f"void {process.process_id}_step() {{",
-            *[f"  {line}" for block in operator_blocks for line in block.splitlines()],
+            "  // Operator invocation wiring is emitted by the next scheduler layer.",
             "}",
             "",
         ]
