@@ -8,15 +8,15 @@ submission while leaving room to rebrand and broaden after the contest.
 
 TempoDAG should be presented as an AMD-focused temporal inference compiler:
 
-> Compile streaming quant-finance models into optimized temporal graphs and
-> Vitis HLS directive plans, preserve fixed-point correctness, and show faster
-> order-decision inference on AMD hardware.
+> Compile stateful streaming inference pipelines into optimized temporal graphs
+> and Vitis HLS directive plans, preserve fixed-point correctness, and show
+> faster inference on AMD hardware.
 
 The competition story is not "a general compiler for everything." The
 competition story is:
 
-> A reproducible AMD hardware reference design for low-latency streaming
-> inference, demonstrated on quant-finance order-decision workloads.
+> A reproducible AMD hardware reference design for low-latency stateful
+> streaming inference, demonstrated on a judge-fast showcase workload.
 
 After the competition, the project can rebrand or broaden back toward the full
 platform vision.
@@ -53,16 +53,17 @@ poor first targets unless the project already has reliable access to one.
 Suggested purchase timing:
 
 - Do not buy the board before the software-only demo can generate stable HLS
-  for at least one quant-finance pipeline.
+  for at least one representative streaming pipeline.
 - Buy the board once the notebook can replay a market trace, run Python and
   software-library baselines, generate HLS artifacts, and produce a parity
   report.
 - The board then becomes a validation and packaging target, not a blocker for
   early compiler work.
 
-## Application Story
+## Showcase Application
 
-The flagship application should be quant-finance streaming inference.
+Quant-finance streaming inference is a strong candidate showcase, but it is not
+the platform's main purpose.
 
 Candidate demo:
 
@@ -191,7 +192,7 @@ During the competition, the repo should be organized around the AMD submission.
 
 Recommended top-level submission folders:
 
-- `benchmarks/`: quant-finance workloads and baseline runners.
+- `benchmarks/`: showcase workloads and baseline runners.
 - `demo/`: notebook and judge-fast scripts.
 - `artifacts/`: generated reports, traces, and selected generated HLS outputs.
 - `docs/`: architecture, roadmap, hardware contract, and submission guide.

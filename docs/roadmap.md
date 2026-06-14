@@ -18,6 +18,162 @@ The long-term target is a platform that turns a temporal model graph into
 HLS-backed hardware artifacts, validates both correctness and inference
 performance, and uses scheduling optimization as the core differentiator.
 
+## Execution Milestone Plan
+
+This is the practical path from the current temporal MVP to the competition
+submission. Each milestone should leave behind a runnable artifact, not only a
+design note.
+
+### M1: Temporal Semantics And Hardware Contract
+
+Primary output:
+
+- A precise compiler contract for temporal execution and generated HLS blocks.
+
+Required work:
+
+- Define reset, warm-up, flush, state read/write, buffer update, and stream
+  termination semantics.
+- Define the standard generated HLS block interface for streams, state,
+  buffers, and optional memory access.
+- Specify how `Edge0` and `EdgeDelta` lower to wires, registers, FIFOs, ring
+  buffers, or RAM.
+- Add small reference graphs that exercise delay, recurrence, windows, and
+  state reset.
+- Document the legality checks that every optimizer and backend pass must
+  preserve.
+
+Exit gate:
+
+- A developer can implement a graph rewrite or HLS renderer against one written
+  contract without guessing temporal or hardware semantics.
+
+### M2: Graph-Level HLS Artifact Path
+
+Primary output:
+
+- Generated HLS and testbench artifacts for one representative temporal
+  pipeline.
+
+Required work:
+
+- Lower one representative streaming pipeline into temporal IR.
+- Preserve model weights as named constants, state, or immutable parameter
+  blocks.
+- Generate graph-level HLS wrappers, not only isolated operator snippets.
+- Emit golden traces and expected decision outputs.
+- Keep the artifact path notebook-friendly.
+
+Exit gate:
+
+- One command or notebook cell produces the temporal process JSON, generated
+  HLS, testbench, golden trace, and report for the same pipeline.
+
+### M3: Baseline Scheduler And Cost Model
+
+Primary output:
+
+- A conservative schedule and resource estimate for the generated HLS pipeline.
+
+Required work:
+
+- Define schedule phases, estimated latency, estimated initiation interval, and
+  buffer-depth accounting.
+- Attach per-node cost records for latency, resources, and memory traffic.
+- Generate a baseline directive plan with safe defaults.
+- Produce report tables for estimated II, latency, buffers, and resource use.
+
+Exit gate:
+
+- The report can compare Python/software baseline latency against generated HLS
+  schedule estimates for at least one model.
+
+### M4: Temporal Graph Optimizer
+
+Primary output:
+
+- An optimized temporal graph that improves the schedule before HLS directive
+  tuning.
+
+Required work:
+
+- Implement parameter-preserving fusion for simple stateless chains.
+- Share compatible rolling windows and delay buffers.
+- Specialize fixed-point metadata for stream and state values.
+- Add legality checks for all graph rewrites.
+- Report graph-only gains against the default temporal graph.
+
+Exit gate:
+
+- The optimized graph preserves fixed-point decisions and shows a measurable
+  schedule, buffer, or traffic improvement with default directives.
+
+### M5: HLS Directive Optimizer
+
+Primary output:
+
+- An optimized Vitis HLS directive plan for the optimized graph.
+
+Required work:
+
+- Model directive choices for `PIPELINE`, `DATAFLOW`, `UNROLL`,
+  `ARRAY_PARTITION`, storage binding, stream depth, and inlining.
+- Generate inline pragmas or Tcl directives from the directive plan.
+- Search or sweep a bounded directive space.
+- Parse or ingest HLS reports where available.
+- Report directive-only gains and combined graph-plus-directive gains.
+
+Exit gate:
+
+- The same optimized graph can be rendered with default directives and
+  optimized directives, with separate metrics for each.
+
+### M6: Judge-Fast Submission Artifact
+
+Primary output:
+
+- A reproducible AMD-focused demo package.
+
+Required work:
+
+- Add a judge-fast notebook with sample trace, model weights, generated HLS,
+  golden trace, expected output, and report tables.
+- Add a short video script centered on the market stream, generated artifacts,
+  before/after metrics, and parity result.
+- Prepare README entry points for a fresh evaluator.
+- Keep the project AMD-focused until submission.
+
+Exit gate:
+
+- A fresh reader can run or inspect the key result in minutes and understand the
+  core claim without reading the whole codebase.
+
+Note:
+
+- Quant-finance streaming inference is a strong candidate showcase workload,
+  but it should not be treated as the platform's main purpose. The core platform
+  remains temporal graph optimization plus HLS directive optimization for
+  stateful streaming inference.
+
+### M7: Board Validation
+
+Primary output:
+
+- KV260 or KR260 validation once software artifacts are stable.
+
+Required work:
+
+- Buy the board only after M2 and M3 are stable.
+- Add board setup notes and device-specific constraints.
+- Run HLS C simulation first, then RTL co-simulation or board flow where
+  feasible.
+- Capture logs, resource reports, and final parity/performance evidence.
+
+Exit gate:
+
+- The board or hardware-emulation evidence supports the same report generated
+  by the software-only flow.
+
 ### Milestone 1: Temporal Semantics Contract
 
 Goal:
@@ -135,8 +291,8 @@ Goal:
 Needed capabilities:
 
 - One named board target with device constraints and reproducible scripts.
-- A flagship quant-finance streaming workload, such as rolling statistics plus
-  TCN/GRU or a DSP-plus-neural order-decision pipeline.
+- A flagship streaming workload, such as rolling statistics plus TCN/GRU, a
+  DSP-plus-neural pipeline, or a quant-finance order-decision pipeline.
 - Generated HLS, simulation traces, performance report, and resource report.
 - A clear comparison against Python inference, existing software-library
   inference, hls4ml where applicable, an unoptimized graph with default
@@ -151,8 +307,8 @@ Competition value:
   hardware story, strong measurements, and a memorable technical contribution.
 
 Buy the target board only after the software demo can generate stable HLS and a
-parity report for one quant-finance pipeline. That keeps early work fast and
-turns hardware bring-up into validation rather than discovery.
+parity report for one representative streaming pipeline. That keeps early work
+fast and turns hardware bring-up into validation rather than discovery.
 
 ### Milestone 7: Broader Model Coverage
 

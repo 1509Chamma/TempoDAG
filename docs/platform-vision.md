@@ -338,13 +338,13 @@ Research into exact optimization, complexity, and proofs is useful because it
 can sharpen the scheduler and novelty claim. It should not delay the first
 working board-aware demo.
 
-The competition application should be quant-finance streaming inference rather
-than a generic model zoo. A strong demo is a recorded or synthetic market-data
-stream feeding several temporal models, followed by an order-decision policy
-that emits submit, hold, cancel, or reduce. The baselines should progress from
-Python inference, to existing software-library inference, to hls4ml where the
-model shape is supported, to naive generated HLS, to TempoDAG's optimized HLS
-schedule.
+The competition application should be a focused stateful streaming workload
+rather than a generic model zoo. Quant-finance streaming inference is a strong
+candidate because recorded or synthetic market-data streams naturally exercise
+rolling features, temporal state, model inference, and decision logic. The
+baselines should progress from Python inference, to existing software-library
+inference, to hls4ml where the model shape is supported, to naive generated
+HLS, to TempoDAG's optimized HLS schedule.
 
 The hls4ml comparison should be framed carefully. hls4ml is a strong model-level
 FPGA inference baseline. TempoDAG's differentiator should be whole-pipeline
