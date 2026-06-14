@@ -27,6 +27,8 @@ with stateful temporal dataflow.
 - [Competition Submission Strategy](submission-strategy.md): AMD-focused demo
   and packaging plan
 - [Temporal IR Guide](temporal-ir-guide.md): Stateful dataflow concepts
+- [Temporal Execution Contract](temporal-execution-contract.md): Execution and
+  HLS lowering semantics
 - [Quickstart](temporal-quickstart.md): First temporal model demo
 
 ## Reading Order
