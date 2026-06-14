@@ -4,6 +4,7 @@ from tempo_dag.codegen.hls.temporal_generator import (
     render_temporal_artifact_from_trace,
     render_temporal_process_hls,
 )
+from tempo_dag.examples import rolling_window_process
 from tempo_dag.parsers.temporal_onnx import (
     TemporalONNXParser,
     build_demo_temporal_onnx_model,
@@ -63,3 +64,14 @@ def test_render_temporal_process_hls_includes_half_header_for_float16_buffers() 
 
     assert "#include <hls_half.h>" in rendered
     assert "static half" in rendered
+
+
+def test_render_temporal_process_hls_includes_execution_contract_comments() -> None:
+    rendered = render_temporal_process_hls(rolling_window_process())
+
+    assert "// reset_policy: zero" in rendered
+    assert "// warmup_timesteps: 7" in rendered
+    assert "// flush_cycles: 0" in rendered
+    assert "// edge_delta_storage: feature_kernel->rolling_window@1:x" in rendered
+    assert "-> register latency=1" in rendered
+    assert "// buffer_storage: rolling_window -> ring_buffer latency=8" in rendered

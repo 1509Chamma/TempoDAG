@@ -5,7 +5,11 @@ from os import PathLike
 from pathlib import Path
 
 from tempo_dag.codegen.hls.generator import render_operator_hls
-from tempo_dag.ir_temporal import Process
+from tempo_dag.ir_temporal import (
+    Process,
+    TemporalStorageMapping,
+    derive_temporal_execution_contract,
+)
 from tempo_dag.verification.golden_trace import GoldenTrace, load_golden_trace
 
 
@@ -24,6 +28,7 @@ def render_temporal_process_hls(process: Process) -> str:
     if len(process.kernels) != 1:
         raise ValueError("temporal HLS MVP currently supports exactly one kernel")
 
+    contract = derive_temporal_execution_contract(process)
     kernel = next(iter(process.kernels.values()))
     operator_blocks = []
     for operator in kernel.graph.ops.values():
@@ -50,6 +55,14 @@ def render_temporal_process_hls(process: Process) -> str:
     return "\n".join(
         [
             f"// Temporal process: {process.process_id}",
+            f"// reset_policy: {contract.reset_policy.value}",
+            f"// warmup_timesteps: {contract.warmup_timesteps}",
+            f"// flush_cycles: {contract.flush_cycles}",
+            *_contract_storage_comments(
+                contract.edge_delta_storage,
+                "edge_delta_storage",
+            ),
+            *_contract_storage_comments(contract.buffer_storage, "buffer_storage"),
             *header_blocks,
             "",
             *buffer_blocks,
@@ -62,6 +75,19 @@ def render_temporal_process_hls(process: Process) -> str:
             "",
         ]
     )
+
+
+def _contract_storage_comments(
+    storage: tuple[TemporalStorageMapping, ...],
+    label: str,
+) -> list[str]:
+    comments = []
+    for mapping in storage:
+        comments.append(
+            f"// {label}: {mapping.component_id} -> "
+            f"{mapping.storage_kind.value} latency={mapping.latency_cycles}"
+        )
+    return comments
 
 
 def render_temporal_testbench(
