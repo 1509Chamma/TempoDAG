@@ -93,3 +93,6 @@ This first implementation is structural. It validates process consistency and
 the key temporal DAG invariant. Operator lowering, temporal ONNX parsing,
 state-aware quantization, scheduling, and HLS generation build on this layer in
 later roadmap steps.
+
+For the operational timestep semantics and HLS storage/interface obligations,
+see [Temporal Execution And HLS Contract](temporal-execution-contract.md).
