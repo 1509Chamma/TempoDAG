@@ -30,6 +30,21 @@ def _shape_product(shape: Sequence[int]) -> int:
     return product
 
 
+def _cpp_dtype(dtype: str) -> str:
+    return {
+        "float16": "half",
+        "float32": "float",
+        "float64": "double",
+        "int16": "std::int16_t",
+        "int32": "std::int32_t",
+        "int64": "std::int64_t",
+    }.get(dtype, dtype)
+
+
+def _cpp_bool(value: bool) -> str:
+    return "true" if value else "false"
+
+
 def _is_int_sequence(value: object) -> TypeGuard[Sequence[int]]:
     return (
         isinstance(value, Sequence)
@@ -53,6 +68,7 @@ class BuiltinOperator(Operator):
         output_values = [
             self._lookup_value(values, value_id, "output") for value_id in self.outputs
         ]
+        primary_output = output_values[0] if output_values else None
         return {
             "op_id": self.op_id,
             "op_type": self.op_type,
@@ -61,6 +77,26 @@ class BuiltinOperator(Operator):
             "attrs": dict(self.attrs),
             "input_shapes": [value.shape for value in input_values],
             "output_shapes": [value.shape for value in output_values],
+            "cpp_dtype": _cpp_dtype(
+                primary_output.dtype
+                if primary_output is not None
+                else (input_values[0].dtype if input_values else "float32")
+            ),
+            "input_0_size": (
+                _shape_product(input_values[0].shape) if len(input_values) > 0 else 0
+            ),
+            "input_1_size": (
+                _shape_product(input_values[1].shape) if len(input_values) > 1 else 0
+            ),
+            "output_0_size": (
+                _shape_product(output_values[0].shape) if len(output_values) > 0 else 0
+            ),
+            "has_scalar_lhs": _cpp_bool(
+                len(input_values) > 0 and input_values[0].vtype is ValueType.SCALAR
+            ),
+            "has_scalar_rhs": _cpp_bool(
+                len(input_values) > 1 and input_values[1].vtype is ValueType.SCALAR
+            ),
         }
 
     def _require_input_count(self, allowed: int | Iterable[int]) -> None:
@@ -367,6 +403,31 @@ class ReductionOperator(BuiltinOperator):
             metadata={"heuristic": "reduction"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value = self._input_values(values)[0]
+        output_value = self._output_value(values)
+        reduction_axes = self._reduction_axes(input_value)
+        expected_suffix_axes = list(
+            range(len(input_value.shape) - len(reduction_axes), len(input_value.shape))
+        )
+        if reduction_axes != expected_suffix_axes:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently supports contiguous "
+                "suffix reductions only"
+            )
+        input_size = _shape_product(input_value.shape)
+        output_size = _shape_product(output_value.shape)
+        reduction_size = input_size // max(1, output_size)
+        context.update(
+            {
+                "input_size": input_size,
+                "output_size": output_size,
+                "reduction_size": reduction_size,
+            }
+        )
+        return context
+
 
 class Add(BinaryElementwiseOperator):
     OP_TYPE = "Add"
@@ -451,6 +512,25 @@ class Softmax(BuiltinOperator):
             metadata={"heuristic": "softmax"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value = self._input_values(values)[0]
+        axis = self._resolve_axis(
+            self._optional_int_attr("axis", -1),
+            len(input_value.shape),
+        )
+        axis_size = input_value.shape[axis]
+        outer_size = _shape_product(input_value.shape[:axis])
+        inner_size = _shape_product(input_value.shape[axis + 1 :])
+        context.update(
+            {
+                "axis_size": axis_size,
+                "outer_size": outer_size,
+                "inner_size": inner_size,
+            }
+        )
+        return context
+
 
 class Sum(ReductionOperator):
     OP_TYPE = "Sum"
@@ -509,6 +589,18 @@ class MatMul(BuiltinOperator):
             metadata={"heuristic": "matmul"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        lhs, rhs = self._input_values(values)
+        context.update(
+            {
+                "m_dim": lhs.shape[0],
+                "k_dim": lhs.shape[1],
+                "n_dim": rhs.shape[1],
+            }
+        )
+        return context
+
 
 class Transpose(BuiltinOperator):
     OP_TYPE = "Transpose"
@@ -554,6 +646,23 @@ class Transpose(BuiltinOperator):
             metadata={"heuristic": "transpose"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value = self._input_values(values)[0]
+        perm = self._require_int_sequence_attr("perm")
+        if len(input_value.shape) != 2 or perm != [1, 0]:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently supports rank-2 "
+                "matrix transpose with perm [1, 0]"
+            )
+        context.update(
+            {
+                "rows": input_value.shape[0],
+                "cols": input_value.shape[1],
+            }
+        )
+        return context
+
 
 class Reshape(BuiltinOperator):
     OP_TYPE = "Reshape"
@@ -598,6 +707,11 @@ class Reshape(BuiltinOperator):
             ff=max(1, work // 4),
             metadata={"heuristic": "reshape"},
         )
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        context["num_elements"] = self._output_work(values)
+        return context
 
 
 class Concat(BuiltinOperator):
@@ -652,6 +766,20 @@ class Concat(BuiltinOperator):
             metadata={"heuristic": "concat"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_values = self._input_values(values)
+        context.update(
+            {
+                "num_inputs": len(input_values),
+                "input_sizes_csv": ", ".join(
+                    str(_shape_product(value.shape)) for value in input_values
+                ),
+                "output_size": self._output_work(values),
+            }
+        )
+        return context
+
 
 class Slice(BuiltinOperator):
     OP_TYPE = "Slice"
@@ -698,6 +826,28 @@ class Slice(BuiltinOperator):
             metadata={"heuristic": "slice"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value = self._input_values(values)[0]
+        axis = self._resolve_axis(
+            self._require_int_attr("axis"),
+            len(input_value.shape),
+        )
+        if axis != 0 or len(input_value.shape) != 1:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently supports rank-1 slices "
+                "along axis 0"
+            )
+        context.update(
+            {
+                "start": self._require_int_attr("start"),
+                "end": self._require_int_attr("end"),
+                "step": self._optional_int_attr("step", 1),
+                "output_size": self._output_work(values),
+            }
+        )
+        return context
+
 
 class LayerNorm(BuiltinOperator):
     OP_TYPE = "LayerNorm"
@@ -727,6 +877,24 @@ class LayerNorm(BuiltinOperator):
             ff=max(2, work * 2),
             metadata={"heuristic": "layer_norm"},
         )
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value = self._input_values(values)[0]
+        axis = self._resolve_axis(
+            self._optional_int_attr("axis", -1),
+            len(input_value.shape),
+        )
+        normalized_size = _shape_product(input_value.shape[axis:])
+        outer_size = _shape_product(input_value.shape[:axis])
+        context.update(
+            {
+                "normalized_size": normalized_size,
+                "outer_size": outer_size,
+                "epsilon": self.attrs.get("epsilon", 1e-5),
+            }
+        )
+        return context
 
 
 class Conv1D(BuiltinOperator):
@@ -820,6 +988,47 @@ class Conv1D(BuiltinOperator):
             metadata={"heuristic": "conv1d"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value, weight_value, *rest = self._input_values(values)
+        batch, in_channels, input_length = input_value.shape
+        out_channels, _, kernel_width = weight_value.shape
+        output_length = self._output_value(values).shape[2]
+        bias_parameter = ""
+        bias_init = f"({context['cpp_dtype']})0"
+        if rest:
+            bias = rest[0]
+            if bias.vtype is ValueType.SCALAR:
+                bias_size = 1
+                bias_index = "0"
+            elif bias.shape in ([out_channels], [1, out_channels, 1]):
+                bias_size = _shape_product(bias.shape)
+                bias_index = "out_channel"
+            else:
+                raise InvalidOperatorInstanceError(
+                    f"{self.op_type} HLS template supports scalar, "
+                    f"[{out_channels}], or [1, {out_channels}, 1] bias only"
+                )
+            bias_parameter = f",\n    const {context['cpp_dtype']} bias[{bias_size}]"
+            bias_init = f"bias[{bias_index}]"
+        context.update(
+            {
+                "batch": batch,
+                "in_channels": in_channels,
+                "input_length": input_length,
+                "out_channels": out_channels,
+                "kernel_width": kernel_width,
+                "output_length": output_length,
+                "stride": self._optional_int_attr("stride", 1),
+                "padding": self._optional_int_attr("padding", 0),
+                "dilation": self._optional_int_attr("dilation", 1),
+                "has_bias": _cpp_bool(bool(rest)),
+                "bias_parameter": bias_parameter,
+                "bias_init": bias_init,
+            }
+        )
+        return context
+
 
 class Pad(BuiltinOperator):
     OP_TYPE = "Pad"
@@ -863,6 +1072,24 @@ class Pad(BuiltinOperator):
             metadata={"heuristic": "pad"},
         )
 
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_value = self._input_values(values)[0]
+        if len(input_value.shape) != 1:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently supports rank-1 padding"
+            )
+        pads = self._require_int_sequence_attr("pads")
+        context.update(
+            {
+                "input_size": _shape_product(input_value.shape),
+                "output_size": self._output_work(values),
+                "pad_before": pads[0] if pads else 0,
+                "pad_after": pads[len(pads) // 2] if pads else 0,
+            }
+        )
+        return context
+
 
 class Shift(BuiltinOperator):
     OP_TYPE = "Shift"
@@ -897,6 +1124,16 @@ class Shift(BuiltinOperator):
             ff=max(1, work // 2),
             metadata={"heuristic": "shift"},
         )
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        context.update(
+            {
+                "amount": self._require_int_attr("amount"),
+                "output_size": self._output_work(values),
+            }
+        )
+        return context
 
 
 class LSTM(BuiltinOperator):
@@ -938,10 +1175,15 @@ class LSTM(BuiltinOperator):
                 f"got {r.shape}"
             )
 
-        # Optional inputs
-        if len(input_values) > 3:  # Bias
-            # ... bias validation if needed
-            pass
+        if len(input_values) > 3:
+            bias = input_values[3]
+            self._require_tensor(bias, "input[3] (B)")
+            expected_bias_shape = [num_directions, 8 * hidden_size]
+            if bias.shape != expected_bias_shape:
+                raise InvalidOperatorInstanceError(
+                    f"{self.op_type} expects bias B shape {expected_bias_shape}, "
+                    f"got {bias.shape}"
+                )
 
         # Validate outputs
         output_values = [
@@ -980,6 +1222,74 @@ class LSTM(BuiltinOperator):
             ff=max(100, hidden_size * 10),
             metadata={"heuristic": "lstm"},
         )
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        input_values = self._input_values(values)
+        x, _, _ = input_values[:3]
+        seq_len, batch, input_size = x.shape
+        hidden_size = self._require_int_attr("hidden_size")
+        direction = self.attrs.get("direction", "forward")
+        if direction not in ("forward", "reverse", "bidirectional"):
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} requires direction to be forward, reverse, "
+                "or bidirectional"
+            )
+        if len(input_values) > 4:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently supports X, W, R, "
+                "and optional B inputs only"
+            )
+        if len(self.outputs) != 1:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently emits the Y output only"
+            )
+
+        num_directions = 2 if direction == "bidirectional" else 1
+        bias_parameter = ""
+        gate_biases = {
+            "gate_i_bias": f"({context['cpp_dtype']})0",
+            "gate_o_bias": f"({context['cpp_dtype']})0",
+            "gate_f_bias": f"({context['cpp_dtype']})0",
+            "gate_c_bias": f"({context['cpp_dtype']})0",
+        }
+        if len(input_values) > 3:
+            bias_parameter = (
+                f",\n    const {context['cpp_dtype']} "
+                f"b[{num_directions}][{hidden_size * 8}]"
+            )
+            gate_biases = {
+                "gate_i_bias": (
+                    "b[direction][hidden_idx] + "
+                    f"b[direction][4 * {hidden_size} + hidden_idx]"
+                ),
+                "gate_o_bias": (
+                    f"b[direction][{hidden_size} + hidden_idx] + "
+                    f"b[direction][5 * {hidden_size} + hidden_idx]"
+                ),
+                "gate_f_bias": (
+                    f"b[direction][2 * {hidden_size} + hidden_idx] + "
+                    f"b[direction][6 * {hidden_size} + hidden_idx]"
+                ),
+                "gate_c_bias": (
+                    f"b[direction][3 * {hidden_size} + hidden_idx] + "
+                    f"b[direction][7 * {hidden_size} + hidden_idx]"
+                ),
+            }
+        context.update(
+            {
+                "seq_len": seq_len,
+                "batch": batch,
+                "input_size": input_size,
+                "hidden_size": hidden_size,
+                "num_directions": num_directions,
+                "has_bias": _cpp_bool(len(input_values) > 3),
+                "reverse_direction": _cpp_bool(direction == "reverse"),
+                "bias_parameter": bias_parameter,
+                **gate_biases,
+            }
+        )
+        return context
 
 
 BUILTIN_OPERATORS = [

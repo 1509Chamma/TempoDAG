@@ -194,5 +194,8 @@ jobs:
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install -r requirements.txt
 
+      - name: Install C++ compiler for generated HLS smoke tests
+        run: sudo apt-get update && sudo apt-get install -y g++
+
       - name: Run test suite
         run: PYTHONPATH=src .venv/bin/python -m pytest -q

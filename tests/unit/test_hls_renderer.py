@@ -11,9 +11,9 @@ from tempo_dag.codegen.hls.generator import (
     render_operator_hls,
     resolve_hls_template_path,
 )
-from tempo_dag.ir.op import FPGACost, Operator
+from tempo_dag.ir.op import FPGACost, InvalidOperatorInstanceError, Operator
 from tempo_dag.ir.value import Value, ValueType
-from tempo_dag.ops.builtins import Add
+from tempo_dag.ops.builtins import BUILTIN_OPERATORS, LSTM, Add, Conv1D, MatMul, Sum
 
 
 def make_tensor(value_id, shape, axes=None, dtype="float32"):
@@ -84,6 +84,13 @@ def test_resolve_hls_template_path_finds_repo_managed_builtin_template():
     assert template_path == (Path.cwd() / "hls" / "operators" / "add.cpp.tpl").resolve()
 
 
+def test_all_builtin_operator_templates_resolve():
+    for operator_cls in BUILTIN_OPERATORS:
+        operator = operator_cls(op_id="op_0", inputs=[], outputs=[])
+
+        assert resolve_hls_template_path(operator).is_file()
+
+
 def test_render_operator_hls_renders_builtin_template():
     values = {
         "lhs": make_tensor("lhs", [2, 3], ["batch", "feature"]),
@@ -97,6 +104,129 @@ def test_render_operator_hls_renders_builtin_template():
     assert "Operator: Add" in rendered
     assert "Kernel: add_0_kernel" in rendered
     assert "Inputs: ['lhs', 'rhs']" in rendered
+    assert "#pragma HLS PIPELINE II=1" in rendered
+    assert "out[idx] = lhs_value + rhs_value;" in rendered
+
+
+def test_render_operator_hls_renders_matmul_loop_pragmas():
+    values = {
+        "lhs": make_tensor("lhs", [2, 3], ["rows", "inner"]),
+        "rhs": make_tensor("rhs", [3, 4], ["inner", "cols"]),
+        "out": make_tensor("out", [2, 4], ["rows", "cols"]),
+    }
+    operator = MatMul(op_id="matmul_0", inputs=["lhs", "rhs"], outputs=["out"])
+
+    rendered = render_operator_hls(operator, values)
+
+    assert "const float lhs[2][3]" in rendered
+    assert "const float rhs[3][4]" in rendered
+    assert "#pragma HLS UNROLL factor=4" in rendered
+    assert "out[row][col] = acc;" in rendered
+
+
+def test_render_operator_hls_renders_conv1d_kernel_shape():
+    values = {
+        "x": make_tensor("x", [1, 2, 8], ["batch", "channel", "time"]),
+        "w": make_tensor("w", [4, 2, 3], ["out_channel", "in_channel", "kernel"]),
+        "y": make_tensor("y", [1, 4, 8], ["batch", "channel", "time"]),
+    }
+    operator = Conv1D(
+        op_id="conv_0",
+        inputs=["x", "w"],
+        outputs=["y"],
+        attrs={"stride": 1, "padding": 1, "dilation": 1},
+    )
+
+    rendered = render_operator_hls(operator, values)
+
+    assert "const float input[1][2][8]" in rendered
+    assert "const float weight[4][2][3]" in rendered
+    assert "bias" not in rendered.split(") {", maxsplit=1)[0]
+    assert "float out[1][4][8]" in rendered
+    assert "const int in_t = out_t * 1 + kernel * 1 - 1;" in rendered
+
+
+def test_render_operator_hls_renders_conv1d_bias_abi_when_present():
+    values = {
+        "x": make_tensor("x", [1, 2, 8], ["batch", "channel", "time"]),
+        "w": make_tensor("w", [4, 2, 3], ["out_channel", "in_channel", "kernel"]),
+        "b": make_tensor("b", [1, 4, 1], ["batch", "channel", "time"]),
+        "y": make_tensor("y", [1, 4, 8], ["batch", "channel", "time"]),
+    }
+    operator = Conv1D(
+        op_id="conv_0",
+        inputs=["x", "w", "b"],
+        outputs=["y"],
+        attrs={"stride": 1, "padding": 1, "dilation": 1},
+    )
+
+    rendered = render_operator_hls(operator, values)
+
+    assert "const float bias[4]" in rendered
+    assert "float acc = bias[out_channel];" in rendered
+
+
+def test_render_operator_hls_renders_lstm_template():
+    values = {
+        "x": make_tensor("x", [3, 1, 2], ["time", "batch", "feature"]),
+        "w": make_tensor("w", [1, 16, 2], ["direction", "gate_hidden", "feature"]),
+        "r": make_tensor("r", [1, 16, 4], ["direction", "gate_hidden", "hidden"]),
+        "y": make_tensor("y", [3, 1, 1, 4], ["time", "direction", "batch", "hidden"]),
+    }
+    operator = LSTM(
+        op_id="lstm_0",
+        inputs=["x", "w", "r"],
+        outputs=["y"],
+        attrs={"hidden_size": 4},
+    )
+
+    rendered = render_operator_hls(operator, values)
+
+    assert "void lstm_0_kernel(" in rendered
+    assert "const float x[3][1][2]" in rendered
+    assert " b[" not in rendered.split(") {", maxsplit=1)[0]
+    assert "float y[3][1][1][4]" in rendered
+    assert "#pragma HLS ARRAY_PARTITION variable=hidden cyclic factor=4" in rendered
+
+
+def test_render_operator_hls_renders_lstm_bias_abi_when_present():
+    values = {
+        "x": make_tensor("x", [3, 1, 2], ["time", "batch", "feature"]),
+        "w": make_tensor("w", [1, 16, 2], ["direction", "gate_hidden", "feature"]),
+        "r": make_tensor("r", [1, 16, 4], ["direction", "gate_hidden", "hidden"]),
+        "b": make_tensor("b", [1, 32], ["direction", "gate_bias"]),
+        "y": make_tensor("y", [3, 1, 1, 4], ["time", "direction", "batch", "hidden"]),
+    }
+    operator = LSTM(
+        op_id="lstm_0",
+        inputs=["x", "w", "r", "b"],
+        outputs=["y"],
+        attrs={"hidden_size": 4},
+    )
+
+    rendered = render_operator_hls(operator, values)
+
+    assert "const float b[1][32]" in rendered
+    assert "float gate_i = b[direction][hidden_idx]" in rendered
+
+
+def test_render_operator_hls_rejects_non_suffix_reduction_for_current_template():
+    values = {
+        "x": make_tensor("x", [2, 3], ["batch", "feature"]),
+        "y": make_tensor("y", [3], ["feature"]),
+    }
+    operator = Sum(
+        op_id="sum_0",
+        inputs=["x"],
+        outputs=["y"],
+        attrs={"axis": 0},
+    )
+
+    with pytest.raises(
+        InvalidOperatorInstanceError,
+        match="contiguous suffix reductions only",
+    ):
+        render_operator_hls(operator, values)
 
 
 def test_render_operator_hls_resolves_custom_template_relative_to_module():
