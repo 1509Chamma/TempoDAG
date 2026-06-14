@@ -18,6 +18,9 @@ def test_temporal_demo_pipeline_emits_artifacts() -> None:
     assert (output_dir / "temporal_demo.cpp").is_file()
     assert (output_dir / "temporal_demo_tb.cpp").is_file()
     assert (output_dir / "temporal_demo_trace.json").is_file()
+    assert (output_dir / "temporal_demo_process.json").is_file()
+    assert (output_dir / "temporal_demo_manifest.json").is_file()
+    assert report.manifest_path == str(output_dir / "temporal_demo_manifest.json")
 
 
 def test_temporal_lowering_connects_to_trace_driven_hls() -> None:

@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 
 from tempo_dag.codegen.hls.temporal_generator import (
-    render_temporal_artifact_from_trace,
+    write_temporal_hls_artifact_bundle,
 )
 from tempo_dag.numerical_parity import quantize_array
 from tempo_dag.parsers.temporal_onnx import (
@@ -49,6 +49,7 @@ class TemporalDemoReport:
     process_id: str
     buffers: list[str]
     generated_files: list[str]
+    manifest_path: str
     num_trace_steps: int
     validation_passed: bool
     max_state_abs: float
@@ -128,26 +129,16 @@ def run_demo(output_dir: Path = OUTPUT_DIR) -> TemporalDemoReport:
     validator = GoldenTraceValidator()
     validation = validator.validate(golden_trace, quantized_trace)
 
-    artifact = render_temporal_artifact_from_trace(lowering.process, golden_trace)
-
     onnx_path = output_dir / "temporal_demo.onnx"
-    golden_trace_path = output_dir / "temporal_demo_trace.json"
-    process_path = output_dir / "temporal_demo_process.json"
-    hls_path = output_dir / "temporal_demo.cpp"
-    testbench_path = output_dir / "temporal_demo_tb.cpp"
     report_path = output_dir / "temporal_demo_report.json"
 
     onnx.save(model, onnx_path)
-    golden_trace_path.write_text(
-        json.dumps(golden_trace.to_dict(), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+    manifest = write_temporal_hls_artifact_bundle(
+        lowering.process,
+        golden_trace,
+        output_dir,
+        stem="temporal_demo",
     )
-    process_path.write_text(
-        json.dumps(lowering.process.to_dict(), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    hls_path.write_text(artifact.process_hls, encoding="utf-8")
-    testbench_path.write_text(artifact.testbench_hls, encoding="utf-8")
 
     step_metrics = _build_step_metrics(
         fp_trace,
@@ -168,12 +159,10 @@ def run_demo(output_dir: Path = OUTPUT_DIR) -> TemporalDemoReport:
         buffers=sorted(lowering.process.buffers),
         generated_files=[
             str(onnx_path),
-            str(golden_trace_path),
-            str(process_path),
-            str(hls_path),
-            str(testbench_path),
+            *(str(artifact.path) for artifact in manifest.files),
             str(report_path),
         ],
+        manifest_path=str(output_dir / "temporal_demo_manifest.json"),
         num_trace_steps=len(golden_trace.steps),
         validation_passed=bool(validation["pass"]),
         max_state_abs=float(max_state_abs),
