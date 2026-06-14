@@ -13,11 +13,14 @@ with stateful temporal dataflow.
   criteria
 
 **Contributing or extending?**
+- [Contributing Guide](../CONTRIBUTING.md): Pull request expectations and local
+  validation
 - [Development Guide](development.md): Day-to-day workflow and extension
   patterns
 - [Calibration Guide](calibration.md): Quantization and representative dataset
   sampling
 - [Environment Setup](environment-setup.md): Local environment and hook setup
+- [Security Policy](../SECURITY.md): Supported security reporting process
 
 **Reference**
 - [Roadmap](roadmap.md): Stage-based implementation direction
@@ -34,9 +37,10 @@ with stateful temporal dataflow.
 3. Skim [30-Day Roadmap](roadmap-30day.md) for what is being built next.
 
 ### Contributing
-1. Read [Development Guide](development.md) for workflow.
-2. Check [30-Day Roadmap](roadmap-30day.md) for current priorities.
-3. Read section docs, such as the Calibration Guide, as needed.
+1. Read [Contributing Guide](../CONTRIBUTING.md) for expectations.
+2. Read [Development Guide](development.md) for workflow.
+3. Check [Roadmap](roadmap.md) for current milestones.
+4. Read section docs, such as the Calibration Guide, as needed.
 
 ### Understanding the Vision
 1. [Platform Vision](platform-vision.md): strategic alignment with research

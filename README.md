@@ -1,5 +1,9 @@
 # TempoDAG
 
+[![CI](https://github.com/1509Chamma/TempoDAG/actions/workflows/ci.yml/badge.svg)](https://github.com/1509Chamma/TempoDAG/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/1509Chamma/TempoDAG/actions/workflows/codeql.yml/badge.svg)](https://github.com/1509Chamma/TempoDAG/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 TempoDAG is a compiler and verification platform for streaming time-series models represented as stateful temporal dataflow graphs. It transforms PyTorch, TensorFlow, or ONNX models into FPGA-friendly intermediate representations with first-class state management, temporal memory planning, and fixed-point correctness verification.
 
 Rather than treating time-series workloads as ordinary DAGs, TempoDAG explicitly models delayed temporal dependencies, rolling buffers, stateful processing, and streaming optimization targets like initiation interval and steady-state behavior.
@@ -7,6 +11,22 @@ Rather than treating time-series workloads as ordinary DAGs, TempoDAG explicitly
 It is not yet a full "train model, emit bitstream, deploy to board" toolchain.
 The current focus is building a reliable temporal compiler foundation with
 first-class state and delayed-edge semantics before scaling to complex models.
+
+## Project Maturity
+
+TempoDAG is pre-release research infrastructure. The repository is useful for
+exploring temporal IR, parser lowering, fixed-point verification, generated HLS
+artifacts, and compiler-roadmap experiments. It should not yet be treated as a
+production deployment toolchain or a stable public API.
+
+The current open-source standard is:
+
+- Keep claims tied to runnable tests, generated artifacts, or documented
+  milestones.
+- Keep roadmap issues aligned with [docs/roadmap.md](docs/roadmap.md).
+- Preserve a clean verification path for temporal semantics and fixed-point
+  behavior.
+- Prefer focused, reviewable compiler passes over broad rewrites.
 
 The repo uses a `src/` layout on disk, but `src` is not part of the public
 import path. For IR-facing code, prefer package imports such as
@@ -105,10 +125,19 @@ Run the same core checks used during development:
 - [Documentation Index](docs/README.md)
 - [Architecture](docs/architecture.md)
 - [Calibration Guide](docs/calibration.md)
+- [Contributing Guide](CONTRIBUTING.md)
 - [Development Guide](docs/development.md)
 - [Environment Setup](docs/environment-setup.md)
+- [Security Policy](SECURITY.md)
 - [Temporal Quickstart](docs/temporal-quickstart.md)
 - [Roadmap](docs/roadmap.md)
+
+## Contributing
+
+Contributions are welcome while the project is taking shape. Start with
+[CONTRIBUTING.md](CONTRIBUTING.md), pick work that supports the roadmap, and
+open an issue or design proposal for changes that affect temporal semantics,
+HLS interfaces, optimization behavior, or verification guarantees.
 
 ## Future Efforts
 
