@@ -50,7 +50,7 @@ class TemporalExecutionContract:
 
 
 def derive_temporal_execution_contract(process: Process) -> TemporalExecutionContract:
-    """Derive conservative execution metadata from a validated process."""
+    """Validate a process and derive conservative execution metadata."""
 
     process.validate()
     return TemporalExecutionContract(
@@ -113,7 +113,11 @@ def _edge_delta_id(edge: EdgeDelta) -> str:
 def _storage_for_edge_delta(edge: EdgeDelta) -> TemporalStorageKind:
     if edge.lag_cycles == 1:
         return TemporalStorageKind.REGISTER
-    return TemporalStorageKind.SHIFT_REGISTER
+    if edge.lag_cycles <= 64:
+        return TemporalStorageKind.SHIFT_REGISTER
+    if edge.lag_cycles <= 1024:
+        return TemporalStorageKind.FIFO
+    return TemporalStorageKind.RAM
 
 
 def _storage_for_buffer(buffer: BufferSpec) -> TemporalStorageKind:

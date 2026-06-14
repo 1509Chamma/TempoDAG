@@ -103,6 +103,31 @@ def test_contract_maps_short_lag_to_register_and_long_lag_to_shift_register() ->
     )
 
 
+def test_contract_maps_large_temporal_lag_to_fifo_or_ram() -> None:
+    process = Process(
+        process_id="large_lag_storage",
+        kernels={"kernel": _kernel()},
+        states={
+            "state": StateSpec(
+                state_id="state",
+                kind=StateKind.HIDDEN,
+                dtype="float32",
+                shape=(1,),
+            )
+        },
+        edge_delta=[
+            EdgeDelta("kernel", "state", lag_cycles=128, value_id="medium"),
+            EdgeDelta("state", "kernel", lag_cycles=2048, value_id="large"),
+        ],
+    )
+
+    contract = derive_temporal_execution_contract(process)
+    storage = {mapping.component_id: mapping for mapping in contract.edge_delta_storage}
+
+    assert storage["kernel->state@128:medium"].storage_kind == TemporalStorageKind.FIFO
+    assert storage["state->kernel@2048:large"].storage_kind == TemporalStorageKind.RAM
+
+
 def test_contract_maps_buffer_depth_to_storage_kind() -> None:
     process = Process(
         process_id="buffer_storage",

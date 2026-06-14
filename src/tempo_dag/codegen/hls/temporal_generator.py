@@ -24,11 +24,10 @@ class TemporalHLSArtifact:
 def render_temporal_process_hls(process: Process) -> str:
     """Render a top-level HLS wrapper for a temporal process."""
 
-    process.validate()
+    contract = derive_temporal_execution_contract(process)
     if len(process.kernels) != 1:
         raise ValueError("temporal HLS MVP currently supports exactly one kernel")
 
-    contract = derive_temporal_execution_contract(process)
     kernel = next(iter(process.kernels.values()))
     operator_blocks = []
     for operator in kernel.graph.ops.values():
