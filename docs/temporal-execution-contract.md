@@ -215,3 +215,16 @@ Every optimizer pass must preserve:
 
 Any optimization that changes latency must update the generated schedule and
 report so parity checking uses the correct timestep alignment.
+
+## Reference Processes
+
+The canonical M1 reference processes live in
+`tempo_dag.examples.reference_processes`:
+
+- `delay_line_process()` exercises a fixed positive-lag dependency.
+- `recurrent_state_process()` exercises legal recurrence through lag-one state.
+- `rolling_window_process()` exercises buffer warm-up and ring-buffer storage.
+- `initialized_state_process()` exercises metadata-driven reset behavior.
+
+These examples are intentionally small so scheduler, optimizer, HLS, and
+verification tests can share the same semantic fixtures.
