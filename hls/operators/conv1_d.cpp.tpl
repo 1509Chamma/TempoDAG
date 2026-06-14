@@ -6,8 +6,7 @@
 // Output shapes: ${output_shapes}
 void ${op_id}_kernel(
     const ${cpp_dtype} input[${batch}][${in_channels}][${input_length}],
-    const ${cpp_dtype} weight[${out_channels}][${in_channels}][${kernel_width}],
-    const ${cpp_dtype} bias[${out_channels}],
+    const ${cpp_dtype} weight[${out_channels}][${in_channels}][${kernel_width}]${bias_parameter},
     ${cpp_dtype} out[${batch}][${out_channels}][${output_length}]
 ) {
 conv_batch_loop:
@@ -17,7 +16,7 @@ conv_out_channel_loop:
 conv_time_loop:
       for (int out_t = 0; out_t < ${output_length}; ++out_t) {
 #pragma HLS PIPELINE II=1
-        ${cpp_dtype} acc = ${has_bias} ? bias[out_channel] : (${cpp_dtype})0;
+        ${cpp_dtype} acc = ${bias_init};
 conv_in_channel_loop:
         for (int in_channel = 0; in_channel < ${in_channels}; ++in_channel) {
 conv_kernel_loop:

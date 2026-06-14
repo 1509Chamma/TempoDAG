@@ -9,8 +9,7 @@
 void ${op_id}_kernel(
     const ${cpp_dtype} x[${seq_len}][${batch}][${input_size}],
     const ${cpp_dtype} w[${num_directions}][${hidden_size} * 4][${input_size}],
-    const ${cpp_dtype} r[${num_directions}][${hidden_size} * 4][${hidden_size}],
-    const ${cpp_dtype} b[${num_directions}][${hidden_size} * 8],
+    const ${cpp_dtype} r[${num_directions}][${hidden_size} * 4][${hidden_size}]${bias_parameter},
     ${cpp_dtype} y[${seq_len}][${num_directions}][${batch}][${hidden_size}]
 ) {
 lstm_direction_loop:
@@ -37,21 +36,10 @@ lstm_time_loop:
 lstm_hidden_loop:
         for (int hidden_idx = 0; hidden_idx < ${hidden_size}; ++hidden_idx) {
 #pragma HLS PIPELINE II=1
-          ${cpp_dtype} gate_i = ${has_bias}
-              ? b[direction][hidden_idx] + b[direction][4 * ${hidden_size} + hidden_idx]
-              : (${cpp_dtype})0;
-          ${cpp_dtype} gate_o = ${has_bias}
-              ? b[direction][${hidden_size} + hidden_idx] +
-                    b[direction][5 * ${hidden_size} + hidden_idx]
-              : (${cpp_dtype})0;
-          ${cpp_dtype} gate_f = ${has_bias}
-              ? b[direction][2 * ${hidden_size} + hidden_idx] +
-                    b[direction][6 * ${hidden_size} + hidden_idx]
-              : (${cpp_dtype})0;
-          ${cpp_dtype} gate_c = ${has_bias}
-              ? b[direction][3 * ${hidden_size} + hidden_idx] +
-                    b[direction][7 * ${hidden_size} + hidden_idx]
-              : (${cpp_dtype})0;
+          ${cpp_dtype} gate_i = ${gate_i_bias};
+          ${cpp_dtype} gate_o = ${gate_o_bias};
+          ${cpp_dtype} gate_f = ${gate_f_bias};
+          ${cpp_dtype} gate_c = ${gate_c_bias};
 
 lstm_input_loop:
           for (int input_idx = 0; input_idx < ${input_size}; ++input_idx) {

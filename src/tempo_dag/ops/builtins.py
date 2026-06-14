@@ -407,6 +407,15 @@ class ReductionOperator(BuiltinOperator):
         context = super().hls_context(values)
         input_value = self._input_values(values)[0]
         output_value = self._output_value(values)
+        reduction_axes = self._reduction_axes(input_value)
+        expected_suffix_axes = list(
+            range(len(input_value.shape) - len(reduction_axes), len(input_value.shape))
+        )
+        if reduction_axes != expected_suffix_axes:
+            raise InvalidOperatorInstanceError(
+                f"{self.op_type} HLS template currently supports contiguous "
+                "suffix reductions only"
+            )
         input_size = _shape_product(input_value.shape)
         output_size = _shape_product(output_value.shape)
         reduction_size = input_size // max(1, output_size)
@@ -985,6 +994,23 @@ class Conv1D(BuiltinOperator):
         batch, in_channels, input_length = input_value.shape
         out_channels, _, kernel_width = weight_value.shape
         output_length = self._output_value(values).shape[2]
+        bias_parameter = ""
+        bias_init = f"({context['cpp_dtype']})0"
+        if rest:
+            bias = rest[0]
+            if bias.vtype is ValueType.SCALAR:
+                bias_size = 1
+                bias_index = "0"
+            elif bias.shape in ([out_channels], [1, out_channels, 1]):
+                bias_size = _shape_product(bias.shape)
+                bias_index = "out_channel"
+            else:
+                raise InvalidOperatorInstanceError(
+                    f"{self.op_type} HLS template supports scalar, "
+                    f"[{out_channels}], or [1, {out_channels}, 1] bias only"
+                )
+            bias_parameter = f",\n    const {context['cpp_dtype']} bias[{bias_size}]"
+            bias_init = f"bias[{bias_index}]"
         context.update(
             {
                 "batch": batch,
@@ -997,6 +1023,8 @@ class Conv1D(BuiltinOperator):
                 "padding": self._optional_int_attr("padding", 0),
                 "dilation": self._optional_int_attr("dilation", 1),
                 "has_bias": _cpp_bool(bool(rest)),
+                "bias_parameter": bias_parameter,
+                "bias_init": bias_init,
             }
         )
         return context
@@ -1218,6 +1246,36 @@ class LSTM(BuiltinOperator):
             )
 
         num_directions = 2 if direction == "bidirectional" else 1
+        bias_parameter = ""
+        gate_biases = {
+            "gate_i_bias": f"({context['cpp_dtype']})0",
+            "gate_o_bias": f"({context['cpp_dtype']})0",
+            "gate_f_bias": f"({context['cpp_dtype']})0",
+            "gate_c_bias": f"({context['cpp_dtype']})0",
+        }
+        if len(input_values) > 3:
+            bias_parameter = (
+                f",\n    const {context['cpp_dtype']} "
+                f"b[{num_directions}][{hidden_size * 8}]"
+            )
+            gate_biases = {
+                "gate_i_bias": (
+                    "b[direction][hidden_idx] + "
+                    f"b[direction][4 * {hidden_size} + hidden_idx]"
+                ),
+                "gate_o_bias": (
+                    f"b[direction][{hidden_size} + hidden_idx] + "
+                    f"b[direction][5 * {hidden_size} + hidden_idx]"
+                ),
+                "gate_f_bias": (
+                    f"b[direction][2 * {hidden_size} + hidden_idx] + "
+                    f"b[direction][6 * {hidden_size} + hidden_idx]"
+                ),
+                "gate_c_bias": (
+                    f"b[direction][3 * {hidden_size} + hidden_idx] + "
+                    f"b[direction][7 * {hidden_size} + hidden_idx]"
+                ),
+            }
         context.update(
             {
                 "seq_len": seq_len,
@@ -1227,6 +1285,8 @@ class LSTM(BuiltinOperator):
                 "num_directions": num_directions,
                 "has_bias": _cpp_bool(len(input_values) > 3),
                 "reverse_direction": _cpp_bool(direction == "reverse"),
+                "bias_parameter": bias_parameter,
+                **gate_biases,
             }
         )
         return context

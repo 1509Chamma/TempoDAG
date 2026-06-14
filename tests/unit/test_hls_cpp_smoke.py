@@ -530,9 +530,8 @@ int main() {
   float lstm_x[3][1][2] = {};
   float lstm_w[1][16][2] = {};
   float lstm_r[1][16][4] = {};
-  float lstm_b[1][32] = {};
   float lstm_y[3][1][1][4] = {};
-  lstm_0_kernel(lstm_x, lstm_w, lstm_r, lstm_b, lstm_y);
+  lstm_0_kernel(lstm_x, lstm_w, lstm_r, lstm_y);
   const float lstm_expected[12] = {};
   ok = check_array("lstm_zero", &lstm_y[0][0][0][0], lstm_expected, 12) && ok;
 
