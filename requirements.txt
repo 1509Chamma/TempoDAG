@@ -42,7 +42,7 @@ pyrefly==0.51.2
 pytest==9.1.0
 pytest-cov==7.1.0
 pytokens==0.4.1
-requests==2.33.0
+requests==2.34.2
 rich==14.3.3
 ruff==0.15.10
 setuptools==81.0.0
