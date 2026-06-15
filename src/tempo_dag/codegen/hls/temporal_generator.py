@@ -11,6 +11,7 @@ from tempo_dag.ir_temporal import (
     Process,
     TemporalStorageMapping,
     derive_temporal_execution_contract,
+    derive_temporal_schedule,
 )
 from tempo_dag.verification.golden_trace import GoldenTrace, load_golden_trace
 
@@ -22,6 +23,7 @@ class TemporalArtifactKind(Enum):
     GOLDEN_TRACE_JSON = "golden_trace_json"
     PROCESS_HLS = "process_hls"
     TESTBENCH_HLS = "testbench_hls"
+    SCHEDULE_JSON = "schedule_json"
     MANIFEST_JSON = "manifest_json"
 
 
@@ -65,6 +67,7 @@ def render_temporal_process_hls(process: Process) -> str:
     """Render a top-level HLS wrapper for a temporal process."""
 
     contract = derive_temporal_execution_contract(process)
+    schedule = derive_temporal_schedule(process)
     if len(process.kernels) != 1:
         raise ValueError("temporal HLS MVP currently supports exactly one kernel")
 
@@ -102,6 +105,18 @@ def render_temporal_process_hls(process: Process) -> str:
                 "edge_delta_storage",
             ),
             *_contract_storage_comments(contract.buffer_storage, "buffer_storage"),
+            *[
+                f"// schedule_node: {node.node_id} kind={node.kind.value} "
+                f"phase={node.phase} latency={node.latency_cycles} "
+                f"ii={node.initiation_interval}"
+                for node in schedule.nodes
+            ],
+            *[
+                f"// schedule_edge: {edge.edge_id} kind={edge.kind.value} "
+                f"phase={edge.phase} storage="
+                f"{edge.storage_kind.value if edge.storage_kind else 'none'}"
+                for edge in schedule.edges
+            ],
             *header_blocks,
             "",
             *buffer_blocks,
@@ -208,6 +223,7 @@ def write_temporal_hls_artifact_bundle(
 
     process_path = output_path / f"{artifact_stem}_process.json"
     trace_path = output_path / f"{artifact_stem}_trace.json"
+    schedule_path = output_path / f"{artifact_stem}_schedule.json"
     hls_path = output_path / f"{artifact_stem}.cpp"
     testbench_path = output_path / f"{artifact_stem}_tb.cpp"
     manifest_path = output_path / f"{artifact_stem}_manifest.json"
@@ -220,6 +236,15 @@ def write_temporal_hls_artifact_bundle(
         json.dumps(golden_trace.to_dict(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    schedule_path.write_text(
+        json.dumps(
+            derive_temporal_schedule(process).to_dict(),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     hls_path.write_text(rendered.process_hls, encoding="utf-8")
     testbench_path.write_text(rendered.testbench_hls, encoding="utf-8")
 
@@ -228,6 +253,7 @@ def write_temporal_hls_artifact_bundle(
         files=(
             TemporalArtifactFile(TemporalArtifactKind.PROCESS_JSON, process_path),
             TemporalArtifactFile(TemporalArtifactKind.GOLDEN_TRACE_JSON, trace_path),
+            TemporalArtifactFile(TemporalArtifactKind.SCHEDULE_JSON, schedule_path),
             TemporalArtifactFile(TemporalArtifactKind.PROCESS_HLS, hls_path),
             TemporalArtifactFile(TemporalArtifactKind.TESTBENCH_HLS, testbench_path),
             TemporalArtifactFile(TemporalArtifactKind.MANIFEST_JSON, manifest_path),
