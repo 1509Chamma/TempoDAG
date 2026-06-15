@@ -77,9 +77,17 @@ def test_render_temporal_process_hls_includes_execution_contract_comments() -> N
     assert "// reset_policy: zero" in rendered
     assert "// warmup_timesteps: 7" in rendered
     assert "// flush_cycles: 0" in rendered
+    assert "// schedule_estimated_latency_cycles:" in rendered
+    assert "// schedule_estimated_initiation_interval: 1" in rendered
     assert "// edge_delta_storage: feature_kernel->rolling_window@1:x" in rendered
     assert "-> register latency=1" in rendered
     assert "// buffer_storage: rolling_window -> ring_buffer latency=8" in rendered
+    assert "// schedule_node: feature_kernel kind=kernel phase=1" in rendered
+    assert "// schedule_node: rolling_window kind=buffer phase=0" in rendered
+    assert (
+        "// schedule_edge: feature_kernel->rolling_window@1:x " "kind=temporal_delay"
+    ) in rendered
+    assert "#pragma HLS DATAFLOW" in rendered
 
 
 def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:
@@ -106,6 +114,7 @@ def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:
         assert set(files) == {
             TemporalArtifactKind.PROCESS_JSON,
             TemporalArtifactKind.GOLDEN_TRACE_JSON,
+            TemporalArtifactKind.SCHEDULE_JSON,
             TemporalArtifactKind.PROCESS_HLS,
             TemporalArtifactKind.TESTBENCH_HLS,
             TemporalArtifactKind.MANIFEST_JSON,
@@ -116,7 +125,13 @@ def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:
         manifest_payload = json.loads(
             files[TemporalArtifactKind.MANIFEST_JSON].read_text()
         )
+        schedule_payload = json.loads(
+            files[TemporalArtifactKind.SCHEDULE_JSON].read_text()
+        )
         assert manifest_payload["process_id"] == "demo_process"
+        assert schedule_payload["process_id"] == "demo_process"
+        assert schedule_payload["nodes"]
+        assert schedule_payload["edges"]
         assert {item["kind"] for item in manifest_payload["files"]} == {
             kind.value for kind in TemporalArtifactKind
         }

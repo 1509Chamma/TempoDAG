@@ -36,15 +36,17 @@ The demo writes artifacts to `examples/generated/`:
 - `temporal_demo.onnx`
 - `temporal_demo_process.json`
 - `temporal_demo_trace.json`
+- `temporal_demo_schedule.json`
 - `temporal_demo.cpp`
 - `temporal_demo_tb.cpp`
 - `temporal_demo_manifest.json`
 - `temporal_demo_report.json`
 
 The manifest is the stable entry point for generated artifacts. It lists the
-temporal process JSON, golden trace, generated process HLS, and generated
-testbench for the same pipeline so downstream notebooks, reports, and future
-HLS scripts do not need to rediscover file names.
+temporal process JSON, golden trace, generated schedule report, generated
+process HLS, and generated testbench for the same pipeline so downstream
+notebooks, reports, and future HLS scripts do not need to rediscover file
+names.
 
 ## API Reference
 
@@ -74,6 +76,8 @@ The temporal HLS bundle writer produces a graph-level artifact package:
 
 - a temporal process JSON file
 - a golden trace JSON file
+- a baseline schedule JSON file with node phases, edge ABI roles, storage
+  choices, and conservative latency/II estimates
 - a top-level process wrapper with buffer declarations, contract comments, and
   rendered operator kernels
 - a testbench that replays each timestep from the golden trace
@@ -82,6 +86,22 @@ The temporal HLS bundle writer produces a graph-level artifact package:
 The generated C++ is intentionally transparent and inspection-friendly. It is
 meant to prove the process/codegen interface and testbench wiring before the
 project grows a richer temporal scheduler.
+
+## Schedule Report
+
+The schedule report is the first M3 artifact. It classifies the temporal process
+into a stable ABI that later HLS wiring can consume:
+
+- `stream` edges for same-timestep operator-to-operator values
+- `graph_input` and `graph_output` ports for runtime values
+- `parameter_block` inputs for immutable weights or constants
+- `state_read`, `buffer_read`, and temporal-delay edges for persistent state and
+  bounded history
+- per-node phase, estimated latency, and initiation interval metadata
+
+This report is deliberately conservative. It does not yet perform directive
+search or full Vitis `DATAFLOW` emission, but it gives those later passes a
+machine-readable target.
 
 ## HLS Milestone 2 Compile Contract
 
@@ -133,5 +153,5 @@ ONNX model
   -> FixedPointOracle
   -> GoldenTraceRecorder
   -> write_temporal_hls_artifact_bundle
-  -> process JSON + golden trace + HLS + testbench + manifest
+  -> process JSON + golden trace + schedule + HLS + testbench + manifest
 ```

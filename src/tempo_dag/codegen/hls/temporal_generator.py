@@ -9,8 +9,11 @@ from pathlib import Path
 from tempo_dag.codegen.hls.generator import render_operator_hls
 from tempo_dag.ir_temporal import (
     Process,
+    TemporalExecutionContract,
+    TemporalSchedule,
     TemporalStorageMapping,
     derive_temporal_execution_contract,
+    derive_temporal_schedule,
 )
 from tempo_dag.verification.golden_trace import GoldenTrace, load_golden_trace
 
@@ -22,6 +25,7 @@ class TemporalArtifactKind(Enum):
     GOLDEN_TRACE_JSON = "golden_trace_json"
     PROCESS_HLS = "process_hls"
     TESTBENCH_HLS = "testbench_hls"
+    SCHEDULE_JSON = "schedule_json"
     MANIFEST_JSON = "manifest_json"
 
 
@@ -61,10 +65,18 @@ class TemporalHLSArtifactManifest:
         }
 
 
-def render_temporal_process_hls(process: Process) -> str:
+def render_temporal_process_hls(
+    process: Process,
+    *,
+    contract: TemporalExecutionContract | None = None,
+    schedule: TemporalSchedule | None = None,
+) -> str:
     """Render a top-level HLS wrapper for a temporal process."""
 
-    contract = derive_temporal_execution_contract(process)
+    if contract is None:
+        contract = derive_temporal_execution_contract(process)
+    if schedule is None:
+        schedule = derive_temporal_schedule(process, contract)
     if len(process.kernels) != 1:
         raise ValueError("temporal HLS MVP currently supports exactly one kernel")
 
@@ -97,11 +109,27 @@ def render_temporal_process_hls(process: Process) -> str:
             f"// reset_policy: {contract.reset_policy.value}",
             f"// warmup_timesteps: {contract.warmup_timesteps}",
             f"// flush_cycles: {contract.flush_cycles}",
+            f"// schedule_estimated_latency_cycles: "
+            f"{schedule.estimated_latency_cycles}",
+            f"// schedule_estimated_initiation_interval: "
+            f"{schedule.estimated_initiation_interval}",
             *_contract_storage_comments(
                 contract.edge_delta_storage,
                 "edge_delta_storage",
             ),
             *_contract_storage_comments(contract.buffer_storage, "buffer_storage"),
+            *[
+                f"// schedule_node: {node.node_id} kind={node.kind.value} "
+                f"phase={node.phase} latency={node.latency_cycles} "
+                f"ii={node.initiation_interval}"
+                for node in schedule.nodes
+            ],
+            *[
+                f"// schedule_edge: {edge.edge_id} kind={edge.kind.value} "
+                f"phase={edge.phase} storage="
+                f"{edge.storage_kind.value if edge.storage_kind else 'none'}"
+                for edge in schedule.edges
+            ],
             *header_blocks,
             "",
             *buffer_blocks,
@@ -111,6 +139,7 @@ def render_temporal_process_hls(process: Process) -> str:
             *[line for block in operator_blocks for line in block.splitlines()],
             "",
             f"void {process.process_id}_step() {{",
+            "#pragma HLS DATAFLOW",
             "  // Operator invocation wiring is emitted by the next scheduler layer.",
             "}",
             "",
@@ -185,9 +214,16 @@ def _to_cpp_dtype(dtype: str) -> str:
 def render_temporal_artifact_from_trace(
     process: Process,
     golden_trace: GoldenTrace,
+    *,
+    contract: TemporalExecutionContract | None = None,
+    schedule: TemporalSchedule | None = None,
 ) -> TemporalHLSArtifact:
     return TemporalHLSArtifact(
-        process_hls=render_temporal_process_hls(process),
+        process_hls=render_temporal_process_hls(
+            process,
+            contract=contract,
+            schedule=schedule,
+        ),
         testbench_hls=render_temporal_testbench(process, golden_trace),
     )
 
@@ -204,10 +240,18 @@ def write_temporal_hls_artifact_bundle(
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     artifact_stem = stem or process.process_id
-    rendered = render_temporal_artifact_from_trace(process, golden_trace)
+    contract = derive_temporal_execution_contract(process)
+    schedule = derive_temporal_schedule(process, contract)
+    rendered = render_temporal_artifact_from_trace(
+        process,
+        golden_trace,
+        contract=contract,
+        schedule=schedule,
+    )
 
     process_path = output_path / f"{artifact_stem}_process.json"
     trace_path = output_path / f"{artifact_stem}_trace.json"
+    schedule_path = output_path / f"{artifact_stem}_schedule.json"
     hls_path = output_path / f"{artifact_stem}.cpp"
     testbench_path = output_path / f"{artifact_stem}_tb.cpp"
     manifest_path = output_path / f"{artifact_stem}_manifest.json"
@@ -220,6 +264,15 @@ def write_temporal_hls_artifact_bundle(
         json.dumps(golden_trace.to_dict(), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+    schedule_path.write_text(
+        json.dumps(
+            schedule.to_dict(),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     hls_path.write_text(rendered.process_hls, encoding="utf-8")
     testbench_path.write_text(rendered.testbench_hls, encoding="utf-8")
 
@@ -228,6 +281,7 @@ def write_temporal_hls_artifact_bundle(
         files=(
             TemporalArtifactFile(TemporalArtifactKind.PROCESS_JSON, process_path),
             TemporalArtifactFile(TemporalArtifactKind.GOLDEN_TRACE_JSON, trace_path),
+            TemporalArtifactFile(TemporalArtifactKind.SCHEDULE_JSON, schedule_path),
             TemporalArtifactFile(TemporalArtifactKind.PROCESS_HLS, hls_path),
             TemporalArtifactFile(TemporalArtifactKind.TESTBENCH_HLS, testbench_path),
             TemporalArtifactFile(TemporalArtifactKind.MANIFEST_JSON, manifest_path),

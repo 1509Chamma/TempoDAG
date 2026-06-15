@@ -17,6 +17,14 @@ from .process import (
     TemporalIRValidationError,
     validate_temporal_process,
 )
+from .schedule import (
+    ScheduleEdge,
+    ScheduleEdgeKind,
+    ScheduleNode,
+    ScheduleNodeKind,
+    TemporalSchedule,
+    derive_temporal_schedule,
+)
 
 __all__ = [
     "BufferSpec",
@@ -26,12 +34,18 @@ __all__ = [
     "Kernel",
     "Process",
     "ResetPolicy",
+    "ScheduleEdge",
+    "ScheduleEdgeKind",
+    "ScheduleNode",
+    "ScheduleNodeKind",
     "StateKind",
     "StateSpec",
     "TemporalExecutionContract",
     "TemporalIRValidationError",
+    "TemporalSchedule",
     "TemporalStorageKind",
     "TemporalStorageMapping",
     "derive_temporal_execution_contract",
+    "derive_temporal_schedule",
     "validate_temporal_process",
 ]
