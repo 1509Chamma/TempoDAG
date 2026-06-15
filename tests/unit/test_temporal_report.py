@@ -1,5 +1,7 @@
 from typing import cast
 
+import pytest
+
 from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.value import Value, ValueType
 from tempo_dag.ir_temporal import (
@@ -10,6 +12,7 @@ from tempo_dag.ir_temporal import (
     Process,
     StateKind,
     StateSpec,
+    TemporalSchedule,
     derive_temporal_baseline_report,
 )
 from tempo_dag.ops.builtins import Add, MatMul
@@ -146,3 +149,25 @@ def test_baseline_report_disambiguates_reused_value_ids_by_kernel() -> None:
 
     assert rows["small.input->add:x"]["shape"] == [2]
     assert rows["wide.input->add:x"]["shape"] == [5]
+
+
+def test_baseline_report_rejects_schedule_for_different_process() -> None:
+    process = Process(
+        process_id="actual_process",
+        kernels={
+            "kernel": Kernel(
+                "kernel",
+                graph=Graph(values={}, ops={}, graph_inputs=[], graph_outputs=[]),
+            )
+        },
+    )
+    schedule = TemporalSchedule(
+        process_id="other_process",
+        nodes=(),
+        edges=(),
+        estimated_latency_cycles=1,
+        estimated_initiation_interval=1,
+    )
+
+    with pytest.raises(ValueError, match="process_id"):
+        derive_temporal_baseline_report(process, schedule)

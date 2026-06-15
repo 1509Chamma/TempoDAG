@@ -52,6 +52,8 @@ def derive_temporal_baseline_report(
 
     if schedule is None:
         schedule = derive_temporal_schedule(process)
+    elif schedule.process_id != process.process_id:
+        raise ValueError("temporal schedule process_id does not match process_id")
 
     node_table = tuple(_node_row(node) for node in schedule.nodes)
     edge_table = tuple(_edge_row(process, edge) for edge in schedule.edges)
@@ -146,7 +148,7 @@ def _resource_summary(nodes: tuple[ScheduleNode, ...]) -> dict[str, object]:
         metadata = node.metadata or {}
         for key in totals:
             value = metadata.get(key, 0)
-            if isinstance(value, int | float):
+            if isinstance(value, (int, float)):
                 totals[key] += int(value)
     return {
         "resource_model": "coarse_operator_sum",
@@ -316,7 +318,7 @@ def _first_float(
 ) -> float | None:
     for key in keys:
         value = metadata.get(key)
-        if isinstance(value, int | float):
+        if isinstance(value, (int, float)):
             return float(value)
     return default
 
