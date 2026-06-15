@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -99,7 +100,10 @@ def run_demo(output_dir: Path = OUTPUT_DIR) -> TemporalDemoReport:
         torch.tensor([12.0], dtype=torch.float32),
     ]
     adapter = StreamingPyTorchAdapter(RollingMeanConvDemoModel())
+    start_ns = time.perf_counter_ns()
     fp_trace = adapter.run_sequence(sequence)
+    elapsed_ns = time.perf_counter_ns() - start_ns
+    python_latency_ns_per_step = elapsed_ns / len(sequence)
 
     output_spec = QuantizationSpec(
         bit_width=8,
@@ -124,7 +128,12 @@ def run_demo(output_dir: Path = OUTPUT_DIR) -> TemporalDemoReport:
     recorder = GoldenTraceRecorder()
     golden_trace = recorder.record(
         quantized_trace,
-        metadata={"case": "temporal_demo", "num_steps": len(sequence)},
+        metadata={
+            "case": "temporal_demo",
+            "hls_clock_period_ns": 5.0,
+            "num_steps": len(sequence),
+            "python_latency_ns_per_step": python_latency_ns_per_step,
+        },
     )
     validator = GoldenTraceValidator()
     validation = validator.validate(golden_trace, quantized_trace)

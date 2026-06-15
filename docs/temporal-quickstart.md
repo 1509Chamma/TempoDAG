@@ -37,6 +37,7 @@ The demo writes artifacts to `examples/generated/`:
 - `temporal_demo_process.json`
 - `temporal_demo_trace.json`
 - `temporal_demo_schedule.json`
+- `temporal_demo_baseline_report.json`
 - `temporal_demo.cpp`
 - `temporal_demo_tb.cpp`
 - `temporal_demo_manifest.json`

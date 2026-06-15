@@ -259,7 +259,7 @@ def write_temporal_hls_artifact_bundle(
     process_path = output_path / f"{artifact_stem}_process.json"
     trace_path = output_path / f"{artifact_stem}_trace.json"
     schedule_path = output_path / f"{artifact_stem}_schedule.json"
-    report_path = output_path / f"{artifact_stem}_report.json"
+    report_path = output_path / f"{artifact_stem}_baseline_report.json"
     hls_path = output_path / f"{artifact_stem}.cpp"
     testbench_path = output_path / f"{artifact_stem}_tb.cpp"
     manifest_path = output_path / f"{artifact_stem}_manifest.json"
