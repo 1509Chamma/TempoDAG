@@ -88,7 +88,10 @@ def test_baseline_report_includes_temporal_storage_buffers() -> None:
                 depth=8,
             )
         },
-        edge0=[Edge0("window", "kernel", value_id="window_view")],
+        edge0=[
+            Edge0("hidden", "kernel", value_id="hidden_state"),
+            Edge0("window", "kernel", value_id="window_view"),
+        ],
         edge_delta=[
             EdgeDelta("hidden", "kernel", lag_cycles=1, value_id="h_prev"),
             EdgeDelta("kernel", "hidden", lag_cycles=1, value_id="h_next"),
@@ -98,6 +101,7 @@ def test_baseline_report_includes_temporal_storage_buffers() -> None:
     report = derive_temporal_baseline_report(process)
 
     assert any(row["kind"] == "buffer_read" for row in report.buffer_table)
+    assert any(row["kind"] == "state_read" for row in report.buffer_table)
     assert any(row["kind"] == "temporal_delay" for row in report.buffer_table)
     assert any(row["storage_kind"] == "ring_buffer" for row in report.buffer_table)
     assert any(row["storage_kind"] == "register" for row in report.buffer_table)
