@@ -12,6 +12,7 @@ from tempo_dag.ir_temporal import (
     TemporalExecutionContract,
     TemporalSchedule,
     TemporalStorageMapping,
+    derive_temporal_baseline_report,
     derive_temporal_execution_contract,
     derive_temporal_schedule,
 )
@@ -26,6 +27,7 @@ class TemporalArtifactKind(Enum):
     PROCESS_HLS = "process_hls"
     TESTBENCH_HLS = "testbench_hls"
     SCHEDULE_JSON = "schedule_json"
+    BASELINE_REPORT_JSON = "baseline_report_json"
     MANIFEST_JSON = "manifest_json"
 
 
@@ -242,6 +244,11 @@ def write_temporal_hls_artifact_bundle(
     artifact_stem = stem or process.process_id
     contract = derive_temporal_execution_contract(process)
     schedule = derive_temporal_schedule(process, contract)
+    baseline_report = derive_temporal_baseline_report(
+        process,
+        schedule,
+        trace_metadata=golden_trace.metadata,
+    )
     rendered = render_temporal_artifact_from_trace(
         process,
         golden_trace,
@@ -252,6 +259,7 @@ def write_temporal_hls_artifact_bundle(
     process_path = output_path / f"{artifact_stem}_process.json"
     trace_path = output_path / f"{artifact_stem}_trace.json"
     schedule_path = output_path / f"{artifact_stem}_schedule.json"
+    report_path = output_path / f"{artifact_stem}_report.json"
     hls_path = output_path / f"{artifact_stem}.cpp"
     testbench_path = output_path / f"{artifact_stem}_tb.cpp"
     manifest_path = output_path / f"{artifact_stem}_manifest.json"
@@ -273,6 +281,15 @@ def write_temporal_hls_artifact_bundle(
         + "\n",
         encoding="utf-8",
     )
+    report_path.write_text(
+        json.dumps(
+            baseline_report.to_dict(),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     hls_path.write_text(rendered.process_hls, encoding="utf-8")
     testbench_path.write_text(rendered.testbench_hls, encoding="utf-8")
 
@@ -282,6 +299,10 @@ def write_temporal_hls_artifact_bundle(
             TemporalArtifactFile(TemporalArtifactKind.PROCESS_JSON, process_path),
             TemporalArtifactFile(TemporalArtifactKind.GOLDEN_TRACE_JSON, trace_path),
             TemporalArtifactFile(TemporalArtifactKind.SCHEDULE_JSON, schedule_path),
+            TemporalArtifactFile(
+                TemporalArtifactKind.BASELINE_REPORT_JSON,
+                report_path,
+            ),
             TemporalArtifactFile(TemporalArtifactKind.PROCESS_HLS, hls_path),
             TemporalArtifactFile(TemporalArtifactKind.TESTBENCH_HLS, testbench_path),
             TemporalArtifactFile(TemporalArtifactKind.MANIFEST_JSON, manifest_path),

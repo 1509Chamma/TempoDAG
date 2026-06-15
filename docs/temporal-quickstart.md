@@ -43,10 +43,10 @@ The demo writes artifacts to `examples/generated/`:
 - `temporal_demo_report.json`
 
 The manifest is the stable entry point for generated artifacts. It lists the
-temporal process JSON, golden trace, generated schedule report, generated
-process HLS, and generated testbench for the same pipeline so downstream
-notebooks, reports, and future HLS scripts do not need to rediscover file
-names.
+temporal process JSON, golden trace, schedule ABI report, baseline cost report,
+generated process HLS, and generated testbench for the same pipeline so
+downstream notebooks, reports, and future HLS scripts do not need to rediscover
+file names.
 
 ## API Reference
 
@@ -78,6 +78,9 @@ The temporal HLS bundle writer produces a graph-level artifact package:
 - a golden trace JSON file
 - a baseline schedule JSON file with node phases, edge ABI roles, storage
   choices, and conservative latency/II estimates
+- a baseline report JSON file with node/resource tables, edge traffic
+  estimates, storage tables, safe directive defaults, and optional software
+  baseline comparison metadata
 - a top-level process wrapper with buffer declarations, contract comments, and
   rendered operator kernels
 - a testbench that replays each timestep from the golden trace
@@ -87,10 +90,10 @@ The generated C++ is intentionally transparent and inspection-friendly. It is
 meant to prove the process/codegen interface and testbench wiring before the
 project grows a richer temporal scheduler.
 
-## Schedule Report
+## Schedule And Baseline Reports
 
-The schedule report is the first M3 artifact. It classifies the temporal process
-into a stable ABI that later HLS wiring can consume:
+The schedule JSON is the first M3 ABI artifact. It classifies the temporal
+process into a stable contract that later HLS wiring can consume:
 
 - `stream` edges for same-timestep operator-to-operator values
 - `graph_input` and `graph_output` ports for runtime values
@@ -99,9 +102,20 @@ into a stable ABI that later HLS wiring can consume:
   bounded history
 - per-node phase, estimated latency, and initiation interval metadata
 
-This report is deliberately conservative. It does not yet perform directive
-search or full Vitis `DATAFLOW` emission, but it gives those later passes a
-machine-readable target.
+The baseline report JSON is the first M3 cost/reporting artifact. It turns the
+schedule into inspectable tables:
+
+- resource totals from coarse operator cost records
+- per-edge traffic estimates in value elements per timestep
+- buffer and temporal-storage rows
+- safe default directives such as process-level `DATAFLOW`, operator-level
+  `PIPELINE`, channel `STREAM`, and temporal storage binding placeholders
+- optional Python/software baseline comparison when latency metadata is present
+  in the golden trace
+
+Both reports are deliberately conservative. They do not yet perform directive
+search or parse Vitis reports, but they give later optimization passes a
+machine-readable target and a stable judge-facing summary.
 
 ## HLS Milestone 2 Compile Contract
 
@@ -153,5 +167,5 @@ ONNX model
   -> FixedPointOracle
   -> GoldenTraceRecorder
   -> write_temporal_hls_artifact_bundle
-  -> process JSON + golden trace + schedule + HLS + testbench + manifest
+  -> process JSON + golden trace + schedule + report + HLS + testbench + manifest
 ```

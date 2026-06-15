@@ -20,6 +20,7 @@ def test_temporal_demo_pipeline_emits_artifacts() -> None:
     assert (output_dir / "temporal_demo_trace.json").is_file()
     assert (output_dir / "temporal_demo_process.json").is_file()
     assert (output_dir / "temporal_demo_schedule.json").is_file()
+    assert (output_dir / "temporal_demo_report.json").is_file()
     assert (output_dir / "temporal_demo_manifest.json").is_file()
     assert report.manifest_path == str(output_dir / "temporal_demo_manifest.json")
 
