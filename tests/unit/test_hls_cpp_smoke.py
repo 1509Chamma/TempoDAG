@@ -192,7 +192,11 @@ def test_temporal_process_hls_emits_operator_kernels_at_file_scope() -> None:
     assert (
         "template <typename T, int Window>\nvoid rolling_mean_node_kernel" in rendered
     )
-    assert "void demo_process_step() {\n  // Operator invocation wiring" in rendered
+    assert "void demo_process_step() {" in rendered
+    assert "#pragma HLS DATAFLOW" in rendered
+    assert (
+        "Operator invocation wiring is emitted by the next scheduler layer" in rendered
+    )
 
 
 def _render_binary(operator: Operator) -> str:

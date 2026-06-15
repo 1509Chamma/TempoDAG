@@ -77,6 +77,8 @@ def test_render_temporal_process_hls_includes_execution_contract_comments() -> N
     assert "// reset_policy: zero" in rendered
     assert "// warmup_timesteps: 7" in rendered
     assert "// flush_cycles: 0" in rendered
+    assert "// schedule_estimated_latency_cycles:" in rendered
+    assert "// schedule_estimated_initiation_interval: 1" in rendered
     assert "// edge_delta_storage: feature_kernel->rolling_window@1:x" in rendered
     assert "-> register latency=1" in rendered
     assert "// buffer_storage: rolling_window -> ring_buffer latency=8" in rendered
@@ -85,6 +87,7 @@ def test_render_temporal_process_hls_includes_execution_contract_comments() -> N
     assert (
         "// schedule_edge: feature_kernel->rolling_window@1:x " "kind=temporal_delay"
     ) in rendered
+    assert "#pragma HLS DATAFLOW" in rendered
 
 
 def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:

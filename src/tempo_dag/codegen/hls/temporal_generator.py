@@ -100,6 +100,10 @@ def render_temporal_process_hls(process: Process) -> str:
             f"// reset_policy: {contract.reset_policy.value}",
             f"// warmup_timesteps: {contract.warmup_timesteps}",
             f"// flush_cycles: {contract.flush_cycles}",
+            f"// schedule_estimated_latency_cycles: "
+            f"{schedule.estimated_latency_cycles}",
+            f"// schedule_estimated_initiation_interval: "
+            f"{schedule.estimated_initiation_interval}",
             *_contract_storage_comments(
                 contract.edge_delta_storage,
                 "edge_delta_storage",
@@ -126,6 +130,7 @@ def render_temporal_process_hls(process: Process) -> str:
             *[line for block in operator_blocks for line in block.splitlines()],
             "",
             f"void {process.process_id}_step() {{",
+            "#pragma HLS DATAFLOW",
             "  // Operator invocation wiring is emitted by the next scheduler layer.",
             "}",
             "",
