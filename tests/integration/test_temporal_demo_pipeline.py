@@ -1,3 +1,4 @@
+import json
 import tempfile
 from pathlib import Path
 
@@ -20,8 +21,16 @@ def test_temporal_demo_pipeline_emits_artifacts() -> None:
     assert (output_dir / "temporal_demo_trace.json").is_file()
     assert (output_dir / "temporal_demo_process.json").is_file()
     assert (output_dir / "temporal_demo_schedule.json").is_file()
+    assert (output_dir / "temporal_demo_baseline_report.json").is_file()
+    assert (output_dir / "temporal_demo_report.json").is_file()
     assert (output_dir / "temporal_demo_manifest.json").is_file()
     assert report.manifest_path == str(output_dir / "temporal_demo_manifest.json")
+
+    baseline_report = json.loads(
+        (output_dir / "temporal_demo_baseline_report.json").read_text()
+    )
+    assert baseline_report["baseline_comparison"]["python_latency_ns_per_step"] > 0
+    assert baseline_report["baseline_comparison"]["estimated_speedup_vs_python"] > 0
 
 
 def test_temporal_lowering_connects_to_trace_driven_hls() -> None:

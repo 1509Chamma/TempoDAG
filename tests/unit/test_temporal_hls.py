@@ -115,6 +115,7 @@ def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:
             TemporalArtifactKind.PROCESS_JSON,
             TemporalArtifactKind.GOLDEN_TRACE_JSON,
             TemporalArtifactKind.SCHEDULE_JSON,
+            TemporalArtifactKind.BASELINE_REPORT_JSON,
             TemporalArtifactKind.PROCESS_HLS,
             TemporalArtifactKind.TESTBENCH_HLS,
             TemporalArtifactKind.MANIFEST_JSON,
@@ -128,10 +129,17 @@ def test_write_temporal_hls_artifact_bundle_emits_manifest_and_files() -> None:
         schedule_payload = json.loads(
             files[TemporalArtifactKind.SCHEDULE_JSON].read_text()
         )
+        report_payload = json.loads(
+            files[TemporalArtifactKind.BASELINE_REPORT_JSON].read_text()
+        )
         assert manifest_payload["process_id"] == "demo_process"
         assert schedule_payload["process_id"] == "demo_process"
+        assert report_payload["process_id"] == "demo_process"
         assert schedule_payload["nodes"]
         assert schedule_payload["edges"]
+        assert report_payload["node_table"]
+        assert report_payload["edge_table"]
+        assert report_payload["directive_plan"]
         assert {item["kind"] for item in manifest_payload["files"]} == {
             kind.value for kind in TemporalArtifactKind
         }

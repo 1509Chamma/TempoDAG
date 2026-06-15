@@ -17,6 +17,7 @@ from .process import (
     TemporalIRValidationError,
     validate_temporal_process,
 )
+from .report import TemporalBaselineReport, derive_temporal_baseline_report
 from .schedule import (
     ScheduleEdge,
     ScheduleEdgeKind,
@@ -40,12 +41,14 @@ __all__ = [
     "ScheduleNodeKind",
     "StateKind",
     "StateSpec",
+    "TemporalBaselineReport",
     "TemporalExecutionContract",
     "TemporalIRValidationError",
     "TemporalSchedule",
     "TemporalStorageKind",
     "TemporalStorageMapping",
     "derive_temporal_execution_contract",
+    "derive_temporal_baseline_report",
     "derive_temporal_schedule",
     "validate_temporal_process",
 ]
