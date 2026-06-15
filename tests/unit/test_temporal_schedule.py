@@ -1,5 +1,7 @@
 from typing import cast
 
+import pytest
+
 from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.value import Value, ValueType
 from tempo_dag.ir_temporal import (
@@ -8,10 +10,12 @@ from tempo_dag.ir_temporal import (
     EdgeDelta,
     Kernel,
     Process,
+    ResetPolicy,
     ScheduleEdgeKind,
     ScheduleNodeKind,
     StateKind,
     StateSpec,
+    TemporalExecutionContract,
     TemporalStorageKind,
     derive_temporal_schedule,
 )
@@ -165,3 +169,26 @@ def test_schedule_serializes_to_report_dict() -> None:
     assert payload["estimated_latency_cycles"] == 1
     assert payload["estimated_initiation_interval"] == 1
     assert nodes[0]["node_id"] == "kernel"
+
+
+def test_schedule_rejects_contract_for_different_process() -> None:
+    process = Process(
+        process_id="actual_process",
+        kernels={
+            "kernel": Kernel(
+                "kernel",
+                graph=Graph(values={}, ops={}, graph_inputs=[], graph_outputs=[]),
+            )
+        },
+    )
+    contract = TemporalExecutionContract(
+        process_id="other_process",
+        reset_policy=ResetPolicy.ZERO,
+        warmup_timesteps=0,
+        flush_cycles=0,
+        edge_delta_storage=(),
+        buffer_storage=(),
+    )
+
+    with pytest.raises(ValueError, match="process_id"):
+        derive_temporal_schedule(process, contract)

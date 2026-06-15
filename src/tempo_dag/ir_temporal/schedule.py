@@ -116,6 +116,10 @@ def derive_temporal_schedule(
 
     if contract is None:
         contract = derive_temporal_execution_contract(process)
+    elif contract.process_id != process.process_id:
+        raise ValueError(
+            "temporal execution contract process_id does not match process_id"
+        )
     component_phases = _component_phases(process)
     nodes: list[ScheduleNode] = []
     edges: list[ScheduleEdge] = []
