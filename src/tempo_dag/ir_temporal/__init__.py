@@ -5,6 +5,14 @@ from .contract import (
     TemporalStorageMapping,
     derive_temporal_execution_contract,
 )
+from .optimizer import (
+    TemporalOptimizationError,
+    TemporalOptimizationResult,
+    TemporalRewritePass,
+    TemporalRewriteRecord,
+    optimize_temporal_process,
+    validate_temporal_rewrite,
+)
 from .process import (
     BufferSpec,
     Clock,
@@ -44,11 +52,17 @@ __all__ = [
     "TemporalBaselineReport",
     "TemporalExecutionContract",
     "TemporalIRValidationError",
+    "TemporalOptimizationError",
+    "TemporalOptimizationResult",
+    "TemporalRewritePass",
+    "TemporalRewriteRecord",
     "TemporalSchedule",
     "TemporalStorageKind",
     "TemporalStorageMapping",
     "derive_temporal_execution_contract",
     "derive_temporal_baseline_report",
     "derive_temporal_schedule",
+    "optimize_temporal_process",
+    "validate_temporal_rewrite",
     "validate_temporal_process",
 ]
