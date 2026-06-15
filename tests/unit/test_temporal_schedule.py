@@ -1,3 +1,5 @@
+from typing import cast
+
 from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.value import Value, ValueType
 from tempo_dag.ir_temporal import (
@@ -156,8 +158,9 @@ def test_schedule_serializes_to_report_dict() -> None:
     )
 
     payload = derive_temporal_schedule(process).to_dict()
+    nodes = cast(list[dict[str, object]], payload["nodes"])
 
     assert payload["process_id"] == "empty_kernel"
     assert payload["estimated_latency_cycles"] == 1
     assert payload["estimated_initiation_interval"] == 1
-    assert payload["nodes"][0]["node_id"] == "kernel"
+    assert nodes[0]["node_id"] == "kernel"
