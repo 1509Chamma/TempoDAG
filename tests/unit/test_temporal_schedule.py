@@ -93,6 +93,7 @@ def test_schedule_classifies_parameters_and_operator_cost_metadata() -> None:
     matmul = next(node for node in schedule.nodes if node.node_id == "kernel.matmul")
 
     assert edges["kernel.param->matmul:w"].kind == ScheduleEdgeKind.PARAMETER_BLOCK
+    assert edges["kernel.param->matmul:w"].source == "kernel.param"
     assert edges["kernel.param->matmul:w"].storage_kind == TemporalStorageKind.RAM
     assert matmul.metadata == {
         "kernel_id": "kernel",

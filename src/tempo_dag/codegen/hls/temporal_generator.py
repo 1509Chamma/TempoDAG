@@ -9,6 +9,8 @@ from pathlib import Path
 from tempo_dag.codegen.hls.generator import render_operator_hls
 from tempo_dag.ir_temporal import (
     Process,
+    TemporalExecutionContract,
+    TemporalSchedule,
     TemporalStorageMapping,
     derive_temporal_execution_contract,
     derive_temporal_schedule,
@@ -63,11 +65,18 @@ class TemporalHLSArtifactManifest:
         }
 
 
-def render_temporal_process_hls(process: Process) -> str:
+def render_temporal_process_hls(
+    process: Process,
+    *,
+    contract: TemporalExecutionContract | None = None,
+    schedule: TemporalSchedule | None = None,
+) -> str:
     """Render a top-level HLS wrapper for a temporal process."""
 
-    contract = derive_temporal_execution_contract(process)
-    schedule = derive_temporal_schedule(process)
+    if contract is None:
+        contract = derive_temporal_execution_contract(process)
+    if schedule is None:
+        schedule = derive_temporal_schedule(process, contract)
     if len(process.kernels) != 1:
         raise ValueError("temporal HLS MVP currently supports exactly one kernel")
 
@@ -205,9 +214,16 @@ def _to_cpp_dtype(dtype: str) -> str:
 def render_temporal_artifact_from_trace(
     process: Process,
     golden_trace: GoldenTrace,
+    *,
+    contract: TemporalExecutionContract | None = None,
+    schedule: TemporalSchedule | None = None,
 ) -> TemporalHLSArtifact:
     return TemporalHLSArtifact(
-        process_hls=render_temporal_process_hls(process),
+        process_hls=render_temporal_process_hls(
+            process,
+            contract=contract,
+            schedule=schedule,
+        ),
         testbench_hls=render_temporal_testbench(process, golden_trace),
     )
 
@@ -224,7 +240,14 @@ def write_temporal_hls_artifact_bundle(
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     artifact_stem = stem or process.process_id
-    rendered = render_temporal_artifact_from_trace(process, golden_trace)
+    contract = derive_temporal_execution_contract(process)
+    schedule = derive_temporal_schedule(process, contract)
+    rendered = render_temporal_artifact_from_trace(
+        process,
+        golden_trace,
+        contract=contract,
+        schedule=schedule,
+    )
 
     process_path = output_path / f"{artifact_stem}_process.json"
     trace_path = output_path / f"{artifact_stem}_trace.json"
@@ -243,7 +266,7 @@ def write_temporal_hls_artifact_bundle(
     )
     schedule_path.write_text(
         json.dumps(
-            derive_temporal_schedule(process).to_dict(),
+            schedule.to_dict(),
             indent=2,
             sort_keys=True,
         )

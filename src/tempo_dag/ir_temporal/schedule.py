@@ -6,6 +6,7 @@ from enum import Enum
 
 from tempo_dag.ir.op import FPGACost
 from tempo_dag.ir_temporal.contract import (
+    TemporalExecutionContract,
     TemporalStorageKind,
     derive_temporal_execution_contract,
 )
@@ -107,11 +108,14 @@ class TemporalSchedule:
         }
 
 
-def derive_temporal_schedule(process: Process) -> TemporalSchedule:
+def derive_temporal_schedule(
+    process: Process,
+    contract: TemporalExecutionContract | None = None,
+) -> TemporalSchedule:
     """Derive a conservative task-level schedule and channel ABI report."""
 
-    process.validate()
-    contract = derive_temporal_execution_contract(process)
+    if contract is None:
+        contract = derive_temporal_execution_contract(process)
     component_phases = _component_phases(process)
     nodes: list[ScheduleNode] = []
     edges: list[ScheduleEdge] = []
@@ -271,7 +275,7 @@ def _kernel_schedule(
                         ScheduleEdge(
                             edge_id=f"{kernel.kernel_id}.param->{op_id}:{input_id}",
                             kind=ScheduleEdgeKind.PARAMETER_BLOCK,
-                            source=f"{kernel.kernel_id}.parameter",
+                            source=f"{kernel.kernel_id}.param",
                             target=f"{kernel.kernel_id}.{op_id}",
                             value_id=input_id,
                             storage_kind=TemporalStorageKind.RAM,
@@ -294,7 +298,7 @@ def _kernel_schedule(
                     ScheduleEdge(
                         edge_id=f"{kernel.kernel_id}.param->{op_id}:{input_id}",
                         kind=ScheduleEdgeKind.PARAMETER_BLOCK,
-                        source=f"{kernel.kernel_id}.parameter",
+                        source=f"{kernel.kernel_id}.param",
                         target=f"{kernel.kernel_id}.{op_id}",
                         value_id=input_id,
                         storage_kind=TemporalStorageKind.RAM,
