@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import prod
 
-from tempo_dag.ir_temporal.process import Process
+from tempo_dag.ir_temporal.process import Kernel, Process
 from tempo_dag.ir_temporal.schedule import (
     ScheduleEdge,
     ScheduleEdgeKind,
@@ -122,7 +122,7 @@ def _edge_row(process: Process, edge: ScheduleEdge) -> dict[str, object]:
 
 def _buffer_row(process: Process, edge: ScheduleEdge) -> dict[str, object]:
     value_metadata = _value_metadata(process, edge)
-    depth = edge.latency_cycles
+    depth = max(1, edge.latency_cycles)
     if edge.target in process.buffers:
         depth = process.buffers[edge.target].depth
     elif edge.source in process.buffers:
@@ -250,7 +250,7 @@ def _baseline_comparison(
 
 def _value_metadata(process: Process, edge: ScheduleEdge) -> dict[str, object]:
     if edge.value_id is not None:
-        for kernel in process.kernels.values():
+        for kernel in _candidate_kernels(process, edge):
             value = kernel.graph.values.get(edge.value_id)
             if value is not None:
                 return _shape_metadata(value.dtype, value.shape)
@@ -262,6 +262,19 @@ def _value_metadata(process: Process, edge: ScheduleEdge) -> dict[str, object]:
             buffer = process.buffers[component_id]
             return _shape_metadata(buffer.dtype, buffer.shape)
     return _shape_metadata("unknown", ())
+
+
+def _candidate_kernels(process: Process, edge: ScheduleEdge) -> list[Kernel]:
+    candidates: list[Kernel] = []
+    for endpoint in (edge.source, edge.target):
+        kernel_id = endpoint.split(".", maxsplit=1)[0]
+        kernel = process.kernels.get(kernel_id)
+        if kernel is not None and kernel not in candidates:
+            candidates.append(kernel)
+    for kernel in process.kernels.values():
+        if kernel not in candidates:
+            candidates.append(kernel)
+    return candidates
 
 
 def _shape_metadata(

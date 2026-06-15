@@ -89,7 +89,10 @@ def test_baseline_report_includes_temporal_storage_buffers() -> None:
             )
         },
         edge0=[Edge0("window", "kernel", value_id="window_view")],
-        edge_delta=[EdgeDelta("kernel", "hidden", lag_cycles=1, value_id="h_next")],
+        edge_delta=[
+            EdgeDelta("hidden", "kernel", lag_cycles=1, value_id="h_prev"),
+            EdgeDelta("kernel", "hidden", lag_cycles=1, value_id="h_next"),
+        ],
     )
 
     report = derive_temporal_baseline_report(process)
@@ -98,3 +101,44 @@ def test_baseline_report_includes_temporal_storage_buffers() -> None:
     assert any(row["kind"] == "temporal_delay" for row in report.buffer_table)
     assert any(row["storage_kind"] == "ring_buffer" for row in report.buffer_table)
     assert any(row["storage_kind"] == "register" for row in report.buffer_table)
+    assert all(cast(int, row["depth"]) >= 1 for row in report.buffer_table)
+
+
+def test_baseline_report_disambiguates_reused_value_ids_by_kernel() -> None:
+    process = Process(
+        process_id="multi_kernel_report",
+        kernels={
+            "small": Kernel(
+                "small",
+                graph=Graph(
+                    values={
+                        "x": tensor("x", [2]),
+                        "y": tensor("y", [2]),
+                        "out": tensor("out", [2]),
+                    },
+                    ops={"add": Add("add", inputs=["x", "y"], outputs=["out"])},
+                    graph_inputs=["x", "y"],
+                    graph_outputs=["out"],
+                ),
+            ),
+            "wide": Kernel(
+                "wide",
+                graph=Graph(
+                    values={
+                        "x": tensor("x", [5]),
+                        "y": tensor("y", [5]),
+                        "out": tensor("out", [5]),
+                    },
+                    ops={"add": Add("add", inputs=["x", "y"], outputs=["out"])},
+                    graph_inputs=["x", "y"],
+                    graph_outputs=["out"],
+                ),
+            ),
+        },
+    )
+
+    report = derive_temporal_baseline_report(process)
+    rows = {row["edge_id"]: row for row in report.edge_table}
+
+    assert rows["small.input->add:x"]["shape"] == [2]
+    assert rows["wide.input->add:x"]["shape"] == [5]
