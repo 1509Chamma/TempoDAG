@@ -32,7 +32,7 @@ onnx-ir==0.2.1
 onnxscript==0.6.2
 opt_einsum==3.4.0
 optree==0.19.1
-packaging==26.0
+packaging==26.2
 pathspec==1.0.4
 platformdirs==4.9.4
 pluggy==1.6.0
