@@ -54,5 +54,5 @@ tf2onnx==1.17.0
 torch==2.12.1
 typing_extensions==4.15.0
 urllib3==2.7.0
-wheel==0.46.3
+wheel==0.47.0
 wrapt==2.2.2
