@@ -8,7 +8,7 @@ colorama==0.4.6
 coverage==7.13.5
 filelock==3.25.2
 flatbuffers==25.12.19
-fsspec==2026.3.0
+fsspec==2026.6.0
 gast==0.7.0
 google-pasta==0.2.0
 grpcio==1.81.1
