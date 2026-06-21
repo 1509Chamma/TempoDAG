@@ -10,6 +10,7 @@ from .optimizer import (
     TemporalOptimizationResult,
     TemporalRewritePass,
     TemporalRewriteRecord,
+    fuse_parameterized_matmul_add,
     optimize_temporal_process,
     validate_temporal_rewrite,
 )
@@ -62,6 +63,7 @@ __all__ = [
     "derive_temporal_execution_contract",
     "derive_temporal_baseline_report",
     "derive_temporal_schedule",
+    "fuse_parameterized_matmul_add",
     "optimize_temporal_process",
     "validate_temporal_rewrite",
     "validate_temporal_process",

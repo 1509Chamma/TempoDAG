@@ -12,6 +12,7 @@ from tempo_dag.ir_temporal import (
     StateKind,
     StateSpec,
     TemporalOptimizationError,
+    fuse_parameterized_matmul_add,
     optimize_temporal_process,
     validate_temporal_rewrite,
 )
@@ -96,6 +97,51 @@ def test_optimizer_records_pass_changes() -> None:
     assert result.changed is True
     assert result.rewrites[0].pass_name == "add_metadata"
     assert result.optimized.metadata["optimized"] is True
+
+
+def test_optimizer_fuses_parameterized_matmul_add_chain() -> None:
+    process = optimizer_process()
+
+    result = optimize_temporal_process(
+        process,
+        passes=(fuse_parameterized_matmul_add,),
+    )
+    fused_ops = result.optimized.kernels["kernel"].graph.ops
+    fused_op = next(iter(fused_ops.values()))
+    before = result.baseline_report_before.summary
+    after = result.baseline_report_after.summary
+    graph_only_delta = cast(dict[str, object], result.to_dict()["graph_only_delta"])
+
+    assert result.changed is True
+    assert set(fused_ops) == {"matmul_add_fused"}
+    assert fused_op.op_type == "FusedMatMulAdd"
+    assert fused_op.inputs == ["x", "w", "bias"]
+    assert fused_op.outputs == ["out"]
+    assert fused_op.attrs["fused_ops"] == ["matmul", "add"]
+    assert "z" not in result.optimized.kernels["kernel"].graph.values
+    assert result.optimized.kernels["kernel"].graph.values["w"].layout == "parameter"
+    assert result.optimized.kernels["kernel"].graph.values["bias"].quant == {
+        "role": "parameter"
+    }
+    assert cast(int, after["estimated_latency_cycles"]) < cast(
+        int,
+        before["estimated_latency_cycles"],
+    )
+    assert cast(int, graph_only_delta["estimated_latency_cycles"]) < 0
+    assert cast(int, graph_only_delta["traffic_elements_per_timestep"]) < 0
+
+
+def test_optimizer_does_not_fuse_runtime_add_inputs() -> None:
+    process = optimizer_process()
+    process.kernels["kernel"].graph.values["bias"].quant = None
+
+    result = optimize_temporal_process(
+        process,
+        passes=(fuse_parameterized_matmul_add,),
+    )
+
+    assert result.changed is False
+    assert set(result.optimized.kernels["kernel"].graph.ops) == {"matmul", "add"}
 
 
 def test_rewrite_rejects_process_identity_changes() -> None:
