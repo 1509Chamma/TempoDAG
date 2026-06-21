@@ -29,7 +29,7 @@ networkx==3.6.1
 numpy==2.4.6
 onnx==1.21.0
 onnx-ir==0.2.1
-onnxscript==0.6.2
+onnxscript==0.7.0
 opt_einsum==3.4.0
 optree==0.19.1
 packaging==26.2
