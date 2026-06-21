@@ -38,7 +38,7 @@ platformdirs==4.9.4
 pluggy==1.6.0
 protobuf==7.34.1
 Pygments==2.20.0
-pyrefly==1.0.0
+pyrefly==1.1.1
 pytest==9.1.0
 pytest-cov==7.1.0
 pytokens==0.4.1
