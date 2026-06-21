@@ -149,6 +149,264 @@ class FusedMatMulAddActivation(FusedMatMulAdd):
     def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
         context = super().hls_context(values)
         context["activation"] = self.attrs["activation"]
+        context["activation_expression"] = _activation_expression(
+            str(self.attrs["activation"]),
+            "acc",
+            str(context["cpp_dtype"]),
+        )
+        return context
+
+
+class FusedConv1DAdd(Operator):
+    """Logical fused Conv1D plus parameter-bias Add for schedule optimization."""
+
+    OP_TYPE = "FusedConv1DAdd"
+
+    def validate(self, values: Mapping[str, Value]) -> None:
+        if len(self.inputs) != 3:
+            raise InvalidOperatorInstanceError("FusedConv1DAdd expects 3 inputs")
+        if len(self.outputs) != 1:
+            raise InvalidOperatorInstanceError("FusedConv1DAdd expects 1 output")
+        input_value = _lookup_value(values, self.inputs[0], self.op_type)
+        weight = _lookup_value(values, self.inputs[1], self.op_type)
+        bias = _lookup_value(values, self.inputs[2], self.op_type)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        for label, value in (
+            ("input", input_value),
+            ("weight", weight),
+            ("bias", bias),
+            ("output", output),
+        ):
+            if value.vtype is not ValueType.TENSOR:
+                raise InvalidOperatorInstanceError(
+                    f"FusedConv1DAdd expects {label} to be a tensor"
+                )
+        if (
+            input_value.dtype != weight.dtype
+            or input_value.dtype != bias.dtype
+            or input_value.dtype != output.dtype
+        ):
+            raise InvalidOperatorInstanceError(
+                "FusedConv1DAdd requires all values to share dtype"
+            )
+        expected_shape = _conv1d_output_shape(input_value, weight, self.attrs)
+        if bias.shape != expected_shape or output.shape != expected_shape:
+            raise InvalidOperatorInstanceError(
+                "FusedConv1DAdd requires bias and output to match Conv1D shape"
+            )
+
+    def estimate_fpga_cost(self, values: Mapping[str, Value]) -> FPGACost:
+        input_value = _lookup_value(values, self.inputs[0], self.op_type)
+        weight = _lookup_value(values, self.inputs[1], self.op_type)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        batch = input_value.shape[0]
+        out_channels, in_channels, kernel_width = weight.shape
+        output_length = output.shape[2]
+        work = batch * out_channels * output_length * in_channels * kernel_width
+        output_work = batch * out_channels * output_length
+        return FPGACost(
+            latency_cycles=max(1, work + 1),
+            initiation_interval=1,
+            dsp=max(1, in_channels * kernel_width),
+            bram=max(1, (out_channels * kernel_width + 31) // 32),
+            lut=max(1, output_work),
+            ff=max(1, output_work),
+            metadata={"heuristic": "fused_conv1d_add"},
+        )
+
+    def hls_template_path(self) -> str:
+        return "hls/operators/fused_conv1_d_add.cpp.tpl"
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        input_value = _lookup_value(values, self.inputs[0], self.op_type)
+        weight = _lookup_value(values, self.inputs[1], self.op_type)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        return {
+            "op_id": self.op_id,
+            "op_type": self.op_type,
+            "inputs": list(self.inputs),
+            "outputs": list(self.outputs),
+            "attrs": dict(self.attrs),
+            "cpp_dtype": {"float32": "float", "float64": "double"}.get(
+                output.dtype,
+                output.dtype,
+            ),
+            "batch": input_value.shape[0],
+            "in_channels": input_value.shape[1],
+            "input_length": input_value.shape[2],
+            "out_channels": weight.shape[0],
+            "kernel_width": weight.shape[2],
+            "output_length": output.shape[2],
+            "stride": self.attrs.get("stride", 1),
+            "padding": self.attrs.get("padding", 0),
+            "dilation": self.attrs.get("dilation", 1),
+        }
+
+
+class FusedConv1DAddActivation(FusedConv1DAdd):
+    """Logical fused Conv1D plus parameter-bias Add plus activation."""
+
+    OP_TYPE = "FusedConv1DAddActivation"
+
+    def validate(self, values: Mapping[str, Value]) -> None:
+        super().validate(values)
+        activation = self.attrs.get("activation")
+        if activation not in _SUPPORTED_FUSED_ACTIVATIONS:
+            raise InvalidOperatorInstanceError(
+                "FusedConv1DAddActivation requires a supported activation"
+            )
+
+    def estimate_fpga_cost(self, values: Mapping[str, Value]) -> FPGACost:
+        base = super().estimate_fpga_cost(values)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        output_work = output.shape[0] * output.shape[1] * output.shape[2]
+        activation = self.attrs["activation"]
+        activation_cost = 1 if activation == "ReLU" else max(1, output_work // 2)
+        return FPGACost(
+            latency_cycles=base.latency_cycles + activation_cost,
+            initiation_interval=base.initiation_interval,
+            dsp=base.dsp,
+            bram=base.bram,
+            lut=base.lut + max(1, output_work),
+            ff=base.ff,
+            metadata={
+                "heuristic": "fused_conv1d_add_activation",
+                "activation": activation,
+            },
+        )
+
+    def hls_template_path(self) -> str:
+        return "hls/operators/fused_conv1_d_add_activation.cpp.tpl"
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        context["activation"] = self.attrs["activation"]
+        context["activation_expression"] = _activation_expression(
+            str(self.attrs["activation"]),
+            "acc",
+            str(context["cpp_dtype"]),
+        )
+        return context
+
+
+class FusedScaleAdd(Operator):
+    """Logical fused elementwise parameter scale plus bias Add."""
+
+    OP_TYPE = "FusedScaleAdd"
+
+    def validate(self, values: Mapping[str, Value]) -> None:
+        if len(self.inputs) != 3:
+            raise InvalidOperatorInstanceError("FusedScaleAdd expects 3 inputs")
+        if len(self.outputs) != 1:
+            raise InvalidOperatorInstanceError("FusedScaleAdd expects 1 output")
+        input_value = _lookup_value(values, self.inputs[0], self.op_type)
+        scale = _lookup_value(values, self.inputs[1], self.op_type)
+        bias = _lookup_value(values, self.inputs[2], self.op_type)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        if input_value.vtype is not ValueType.TENSOR:
+            raise InvalidOperatorInstanceError(
+                "FusedScaleAdd expects input to be a tensor"
+            )
+        if output.vtype is not ValueType.TENSOR:
+            raise InvalidOperatorInstanceError(
+                "FusedScaleAdd expects output to be a tensor"
+            )
+        if input_value.shape != output.shape:
+            raise InvalidOperatorInstanceError(
+                "FusedScaleAdd requires input and output shapes to match"
+            )
+        if (
+            input_value.dtype != scale.dtype
+            or input_value.dtype != bias.dtype
+            or input_value.dtype != output.dtype
+        ):
+            raise InvalidOperatorInstanceError(
+                "FusedScaleAdd requires all values to share dtype"
+            )
+        for label, value in (("scale", scale), ("bias", bias)):
+            if not _matches_tensor_or_scalar(value, output.shape):
+                raise InvalidOperatorInstanceError(
+                    f"FusedScaleAdd requires {label} to be scalar or output-shaped"
+                )
+
+    def estimate_fpga_cost(self, values: Mapping[str, Value]) -> FPGACost:
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        output_work = _shape_product(output.shape)
+        return FPGACost(
+            latency_cycles=max(1, output_work + 1),
+            initiation_interval=1,
+            dsp=max(1, output_work),
+            lut=max(1, output_work),
+            ff=max(1, output_work),
+            metadata={"heuristic": "fused_scale_add"},
+        )
+
+    def hls_template_path(self) -> str:
+        return "hls/operators/fused_scale_add.cpp.tpl"
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        scale = _lookup_value(values, self.inputs[1], self.op_type)
+        bias = _lookup_value(values, self.inputs[2], self.op_type)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        return {
+            "op_id": self.op_id,
+            "op_type": self.op_type,
+            "inputs": list(self.inputs),
+            "outputs": list(self.outputs),
+            "attrs": dict(self.attrs),
+            "cpp_dtype": {"float32": "float", "float64": "double"}.get(
+                output.dtype,
+                output.dtype,
+            ),
+            "output_0_size": _shape_product(output.shape),
+            "has_scalar_scale": str(scale.vtype is ValueType.SCALAR).lower(),
+            "has_scalar_bias": str(bias.vtype is ValueType.SCALAR).lower(),
+        }
+
+
+class FusedScaleAddActivation(FusedScaleAdd):
+    """Logical fused elementwise parameter scale plus bias plus activation."""
+
+    OP_TYPE = "FusedScaleAddActivation"
+
+    def validate(self, values: Mapping[str, Value]) -> None:
+        super().validate(values)
+        activation = self.attrs.get("activation")
+        if activation not in _SUPPORTED_FUSED_ACTIVATIONS:
+            raise InvalidOperatorInstanceError(
+                "FusedScaleAddActivation requires a supported activation"
+            )
+
+    def estimate_fpga_cost(self, values: Mapping[str, Value]) -> FPGACost:
+        base = super().estimate_fpga_cost(values)
+        output = _lookup_value(values, self.outputs[0], self.op_type)
+        output_work = _shape_product(output.shape)
+        activation = self.attrs["activation"]
+        activation_cost = 1 if activation == "ReLU" else max(1, output_work // 2)
+        return FPGACost(
+            latency_cycles=base.latency_cycles + activation_cost,
+            initiation_interval=base.initiation_interval,
+            dsp=base.dsp,
+            bram=base.bram,
+            lut=base.lut + max(1, output_work),
+            ff=base.ff,
+            metadata={
+                "heuristic": "fused_scale_add_activation",
+                "activation": activation,
+            },
+        )
+
+    def hls_template_path(self) -> str:
+        return "hls/operators/fused_scale_add_activation.cpp.tpl"
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        context["activation"] = self.attrs["activation"]
+        context["activation_expression"] = _activation_expression(
+            str(self.attrs["activation"]),
+            "acc",
+            str(context["cpp_dtype"]),
+        )
         return context
 
 
@@ -267,6 +525,26 @@ def fuse_parameterized_matmul_add(process: Process) -> Process:
     return optimized
 
 
+def fuse_parameterized_conv1d_add(process: Process) -> Process:
+    """Fuse safe `Conv1D -> Add(parameter bias)[ -> Activation]` chains."""
+
+    optimized = deepcopy(process)
+    for kernel_id, kernel in list(optimized.kernels.items()):
+        fused_kernel = _fuse_kernel_parameterized_conv1d_add(kernel)
+        optimized.kernels[kernel_id] = fused_kernel
+    return optimized
+
+
+def fuse_parameterized_scale_add(process: Process) -> Process:
+    """Fuse safe `Mul(parameter scale) -> Add(parameter bias)[ -> Activation]`."""
+
+    optimized = deepcopy(process)
+    for kernel_id, kernel in list(optimized.kernels.items()):
+        fused_kernel = _fuse_kernel_parameterized_scale_add(kernel)
+        optimized.kernels[kernel_id] = fused_kernel
+    return optimized
+
+
 def validate_temporal_rewrite(original: Process, optimized: Process) -> None:
     """Validate invariants every temporal graph optimizer pass must preserve."""
 
@@ -297,6 +575,207 @@ def validate_temporal_rewrite(original: Process, optimized: Process) -> None:
             original_kernel.graph.values,
             optimized_kernel.graph.values,
         )
+
+
+def _fuse_kernel_parameterized_conv1d_add(kernel: Kernel) -> Kernel:
+    graph = kernel.graph
+    producers = _value_producers(graph)
+    consumers = _value_consumers(graph)
+    ops = dict(graph.ops)
+    values = dict(graph.values)
+
+    for add_id, add_op in sorted(graph.ops.items()):
+        if (
+            add_op.op_type != "Add"
+            or len(add_op.inputs) != 2
+            or len(add_op.outputs) != 1
+        ):
+            continue
+        conv_input = None
+        bias_input = None
+        conv_id = None
+        for input_id in add_op.inputs:
+            producer_id = producers.get(input_id)
+            producer = graph.ops.get(producer_id or "")
+            if producer is not None and producer.op_type == "Conv1D":
+                conv_input = input_id
+                conv_id = producer_id
+            else:
+                bias_input = input_id
+        if conv_input is None or bias_input is None or conv_id is None:
+            continue
+        if not _is_parameter_value(values[bias_input]):
+            continue
+        if consumers[conv_input] != [add_id]:
+            continue
+
+        conv_op = graph.ops[conv_id]
+        add_output = add_op.outputs[0]
+        activation_id = _single_supported_activation_consumer(
+            graph,
+            consumers,
+            add_output,
+        )
+        activation_op = graph.ops[activation_id] if activation_id is not None else None
+        fused_id_parts = [conv_id, add_id]
+        output_id = add_output
+        removed_intermediates = [conv_input]
+        fused_cls: type[Operator] = FusedConv1DAdd
+        attrs: dict[str, object] = {
+            **dict(conv_op.attrs),
+            STATELESS_CHAIN_FUSION_ATTR: True,
+            "fused_ops": [conv_id, add_id],
+            "removed_intermediate": conv_input,
+            "removed_intermediates": list(removed_intermediates),
+        }
+        if activation_op is not None:
+            fused_id_parts.append(activation_id or "")
+            output_id = activation_op.outputs[0]
+            removed_intermediates.append(add_output)
+            fused_cls = FusedConv1DAddActivation
+            attrs["activation"] = activation_op.op_type
+            attrs["fused_ops"] = [conv_id, add_id, activation_id]
+            attrs["removed_intermediates"] = list(removed_intermediates)
+
+        fused_id = "_".join(fused_id_parts) + "_fused"
+        ops[fused_id] = fused_cls(
+            fused_id,
+            inputs=[conv_op.inputs[0], conv_op.inputs[1], bias_input],
+            outputs=[output_id],
+            attrs=attrs,
+        )
+        del ops[conv_id]
+        del ops[add_id]
+        if activation_id is not None:
+            del ops[activation_id]
+        for intermediate in removed_intermediates:
+            if (
+                intermediate not in graph.graph_outputs
+                and intermediate not in graph.graph_inputs
+            ):
+                values.pop(intermediate, None)
+        break
+
+    if ops == graph.ops and values == graph.values:
+        return kernel
+    return Kernel(
+        kernel.kernel_id,
+        graph=graph.__class__(
+            values=values,
+            ops=ops,
+            graph_inputs=list(graph.graph_inputs),
+            graph_outputs=list(graph.graph_outputs),
+            states=dict(graph.states),
+            registry=graph.registry,
+        ),
+        clock_id=kernel.clock_id,
+    )
+
+
+def _fuse_kernel_parameterized_scale_add(kernel: Kernel) -> Kernel:
+    graph = kernel.graph
+    producers = _value_producers(graph)
+    consumers = _value_consumers(graph)
+    ops = dict(graph.ops)
+    values = dict(graph.values)
+
+    for add_id, add_op in sorted(graph.ops.items()):
+        if (
+            add_op.op_type != "Add"
+            or len(add_op.inputs) != 2
+            or len(add_op.outputs) != 1
+        ):
+            continue
+        mul_input = None
+        bias_input = None
+        mul_id = None
+        for input_id in add_op.inputs:
+            producer_id = producers.get(input_id)
+            producer = graph.ops.get(producer_id or "")
+            if producer is not None and producer.op_type == "Mul":
+                mul_input = input_id
+                mul_id = producer_id
+            else:
+                bias_input = input_id
+        if mul_input is None or bias_input is None or mul_id is None:
+            continue
+        if not _is_parameter_value(values[bias_input]):
+            continue
+        if consumers[mul_input] != [add_id]:
+            continue
+
+        mul_op = graph.ops[mul_id]
+        runtime_input = None
+        scale_input = None
+        for input_id in mul_op.inputs:
+            if _is_parameter_value(values[input_id]):
+                scale_input = input_id
+            else:
+                runtime_input = input_id
+        if runtime_input is None or scale_input is None:
+            continue
+        if consumers[mul_input] != [add_id]:
+            continue
+
+        add_output = add_op.outputs[0]
+        activation_id = _single_supported_activation_consumer(
+            graph,
+            consumers,
+            add_output,
+        )
+        activation_op = graph.ops[activation_id] if activation_id is not None else None
+        fused_id_parts = [mul_id, add_id]
+        output_id = add_output
+        removed_intermediates = [mul_input]
+        fused_cls: type[Operator] = FusedScaleAdd
+        attrs: dict[str, object] = {
+            STATELESS_CHAIN_FUSION_ATTR: True,
+            "fused_ops": [mul_id, add_id],
+            "removed_intermediate": mul_input,
+            "removed_intermediates": list(removed_intermediates),
+        }
+        if activation_op is not None:
+            fused_id_parts.append(activation_id or "")
+            output_id = activation_op.outputs[0]
+            removed_intermediates.append(add_output)
+            fused_cls = FusedScaleAddActivation
+            attrs["activation"] = activation_op.op_type
+            attrs["fused_ops"] = [mul_id, add_id, activation_id]
+            attrs["removed_intermediates"] = list(removed_intermediates)
+
+        fused_id = "_".join(fused_id_parts) + "_fused"
+        ops[fused_id] = fused_cls(
+            fused_id,
+            inputs=[runtime_input, scale_input, bias_input],
+            outputs=[output_id],
+            attrs=attrs,
+        )
+        del ops[mul_id]
+        del ops[add_id]
+        if activation_id is not None:
+            del ops[activation_id]
+        for intermediate in removed_intermediates:
+            if (
+                intermediate not in graph.graph_outputs
+                and intermediate not in graph.graph_inputs
+            ):
+                values.pop(intermediate, None)
+        break
+
+    if ops == graph.ops and values == graph.values:
+        return kernel
+    return Kernel(
+        kernel.kernel_id,
+        graph=graph.__class__(
+            values=values,
+            ops=ops,
+            graph_inputs=list(graph.graph_inputs),
+            graph_outputs=list(graph.graph_outputs),
+            states=dict(graph.states),
+            registry=graph.registry,
+        ),
+        clock_id=kernel.clock_id,
+    )
 
 
 def _fuse_kernel_parameterized_matmul_add(kernel: Kernel) -> Kernel:
@@ -481,6 +960,78 @@ def _lookup_value(values: Mapping[str, Value], value_id: str, op_type: str) -> V
         ) from exc
 
 
+def _matches_tensor_or_scalar(value: Value, shape: list[int]) -> bool:
+    if value.vtype is ValueType.SCALAR:
+        return True
+    return value.vtype is ValueType.TENSOR and value.shape == shape
+
+
+def _shape_product(shape: list[int]) -> int:
+    product = 1
+    for dim in shape:
+        product *= dim
+    return product
+
+
+def _activation_expression(activation: str, value_name: str, cpp_dtype: str) -> str:
+    zero = f"({cpp_dtype})0"
+    one = f"({cpp_dtype})1"
+    half = f"({cpp_dtype})0.5"
+    alpha = f"({cpp_dtype})0.7978845608028654"
+    beta = f"({cpp_dtype})0.044715"
+    if activation == "ReLU":
+        return f"{value_name} > {zero} ? {value_name} : {zero}"
+    if activation == "Tanh":
+        return f"std::tanh({value_name})"
+    if activation == "Sigmoid":
+        return f"{one} / ({one} + std::exp(-{value_name}))"
+    if activation == "GELU":
+        cubic = f"{value_name} * {value_name} * {value_name}"
+        inner = f"{alpha} * ({value_name} + {beta} * {cubic})"
+        return f"{half} * {value_name} * ({one} + std::tanh({inner}))"
+    raise InvalidOperatorInstanceError(f"unsupported fused activation '{activation}'")
+
+
+def _conv1d_output_shape(
+    input_value: Value,
+    weight: Value,
+    attrs: Mapping[str, object],
+) -> list[int]:
+    if len(input_value.shape) != 3 or len(weight.shape) != 3:
+        raise InvalidOperatorInstanceError(
+            "FusedConv1DAdd requires rank-3 input and weight tensors"
+        )
+    if input_value.shape[1] != weight.shape[1]:
+        raise InvalidOperatorInstanceError(
+            "FusedConv1DAdd requires input channels to match weight channels"
+        )
+    stride = _int_attr(attrs, "stride", 1)
+    padding = _int_attr(attrs, "padding", 0)
+    dilation = _int_attr(attrs, "dilation", 1)
+    if stride <= 0 or dilation <= 0 or padding < 0:
+        raise InvalidOperatorInstanceError(
+            "FusedConv1DAdd requires positive stride/dilation and non-negative padding"
+        )
+    batch, _, input_length = input_value.shape
+    out_channels, _, kernel_width = weight.shape
+    numerator = input_length + (2 * padding) - (dilation * (kernel_width - 1)) - 1
+    if numerator < 0:
+        raise InvalidOperatorInstanceError(
+            "FusedConv1DAdd has invalid kernel/padding/dilation"
+        )
+    output_length = numerator // stride + 1
+    if output_length <= 0:
+        raise InvalidOperatorInstanceError("FusedConv1DAdd output length must be > 0")
+    return [batch, out_channels, output_length]
+
+
+def _int_attr(attrs: Mapping[str, object], name: str, default: int) -> int:
+    value = attrs.get(name, default)
+    if not isinstance(value, int):
+        raise InvalidOperatorInstanceError(f"{name} must be an integer")
+    return value
+
+
 def _delta(before: object, after: object) -> object:
     if isinstance(before, (int, float)) and isinstance(after, (int, float)):
         return after - before
@@ -492,9 +1043,15 @@ __all__ = [
     "TemporalOptimizationResult",
     "TemporalRewritePass",
     "TemporalRewriteRecord",
+    "FusedConv1DAdd",
+    "FusedConv1DAddActivation",
     "FusedMatMulAdd",
     "FusedMatMulAddActivation",
+    "FusedScaleAdd",
+    "FusedScaleAddActivation",
+    "fuse_parameterized_conv1d_add",
     "fuse_parameterized_matmul_add",
+    "fuse_parameterized_scale_add",
     "optimize_temporal_process",
     "validate_temporal_rewrite",
 ]

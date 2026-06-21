@@ -11,6 +11,14 @@ from tempo_dag.codegen.hls.temporal_generator import (
 )
 from tempo_dag.ir.op import Operator
 from tempo_dag.ir.value import Value, ValueType
+from tempo_dag.ir_temporal import (
+    FusedConv1DAdd,
+    FusedConv1DAddActivation,
+    FusedMatMulAdd,
+    FusedMatMulAddActivation,
+    FusedScaleAdd,
+    FusedScaleAddActivation,
+)
 from tempo_dag.ops.builtins import (
     GELU,
     LSTM,
@@ -91,6 +99,12 @@ def test_representative_hls_operator_templates_compile_as_cpp(
         _render_slice(),
         _render_layer_norm(),
         _render_conv1d(),
+        _render_fused_matmul_add(),
+        _render_fused_matmul_add_activation(),
+        _render_fused_conv1d_add(),
+        _render_fused_conv1d_add_activation(),
+        _render_fused_scale_add(),
+        _render_fused_scale_add_activation(),
         _render_pad(),
         _render_shift(),
         _render_lstm(),
@@ -338,6 +352,112 @@ def _render_conv1d() -> str:
             inputs=["x", "w"],
             outputs=["y"],
             attrs={"stride": 1, "padding": 1, "dilation": 1},
+        ),
+        values,
+    )
+
+
+def _render_fused_matmul_add() -> str:
+    values = {
+        "lhs": make_tensor("lhs", [2, 3], ["rows", "inner"]),
+        "rhs": make_tensor("rhs", [3, 4], ["inner", "cols"]),
+        "bias": make_tensor("bias", [2, 4], ["rows", "cols"]),
+        "out": make_tensor("out", [2, 4], ["rows", "cols"]),
+    }
+    return render_operator_hls(
+        FusedMatMulAdd(
+            op_id="fused_matmul_add_0",
+            inputs=["lhs", "rhs", "bias"],
+            outputs=["out"],
+        ),
+        values,
+    )
+
+
+def _render_fused_matmul_add_activation() -> str:
+    values = {
+        "lhs": make_tensor("lhs", [2, 3], ["rows", "inner"]),
+        "rhs": make_tensor("rhs", [3, 4], ["inner", "cols"]),
+        "bias": make_tensor("bias", [2, 4], ["rows", "cols"]),
+        "out": make_tensor("out", [2, 4], ["rows", "cols"]),
+    }
+    return render_operator_hls(
+        FusedMatMulAddActivation(
+            op_id="fused_matmul_add_relu_0",
+            inputs=["lhs", "rhs", "bias"],
+            outputs=["out"],
+            attrs={"activation": "ReLU"},
+        ),
+        values,
+    )
+
+
+def _render_fused_conv1d_add() -> str:
+    values = {
+        "x": make_tensor("x", [1, 2, 8], ["batch", "channel", "time"]),
+        "w": make_tensor("w", [4, 2, 3], ["out_channel", "in_channel", "kernel"]),
+        "bias": make_tensor("bias", [1, 4, 8], ["batch", "channel", "time"]),
+        "y": make_tensor("y", [1, 4, 8], ["batch", "channel", "time"]),
+    }
+    return render_operator_hls(
+        FusedConv1DAdd(
+            op_id="fused_conv_add_0",
+            inputs=["x", "w", "bias"],
+            outputs=["y"],
+            attrs={"stride": 1, "padding": 1, "dilation": 1},
+        ),
+        values,
+    )
+
+
+def _render_fused_conv1d_add_activation() -> str:
+    values = {
+        "x": make_tensor("x", [1, 2, 8], ["batch", "channel", "time"]),
+        "w": make_tensor("w", [4, 2, 3], ["out_channel", "in_channel", "kernel"]),
+        "bias": make_tensor("bias", [1, 4, 8], ["batch", "channel", "time"]),
+        "y": make_tensor("y", [1, 4, 8], ["batch", "channel", "time"]),
+    }
+    return render_operator_hls(
+        FusedConv1DAddActivation(
+            op_id="fused_conv_add_relu_0",
+            inputs=["x", "w", "bias"],
+            outputs=["y"],
+            attrs={"stride": 1, "padding": 1, "dilation": 1, "activation": "ReLU"},
+        ),
+        values,
+    )
+
+
+def _render_fused_scale_add() -> str:
+    values = {
+        "x": make_tensor("x", [2, 3], ["batch", "feature"]),
+        "scale": make_tensor("scale", [2, 3], ["batch", "feature"]),
+        "bias": make_tensor("bias", [2, 3], ["batch", "feature"]),
+        "out": make_tensor("out", [2, 3], ["batch", "feature"]),
+    }
+    return render_operator_hls(
+        FusedScaleAdd(
+            op_id="fused_scale_add_0",
+            inputs=["x", "scale", "bias"],
+            outputs=["out"],
+        ),
+        values,
+    )
+
+
+def _render_fused_scale_add_activation() -> str:
+    values = {
+        "x": make_tensor("x", [2, 3], ["batch", "feature"]),
+        "scale": make_tensor("scale", [2, 3], ["batch", "feature"]),
+        "bias": make_tensor("bias", [2, 3], ["batch", "feature"]),
+        "out": make_tensor("out", [2, 3], ["batch", "feature"]),
+    }
+    return render_operator_hls(
+        FusedScaleAddActivation(
+            op_id="fused_scale_add_relu_0",
+            inputs=["x", "scale", "bias"],
+            outputs=["out"],
+            attrs={"activation": "ReLU"},
         ),
         values,
     )

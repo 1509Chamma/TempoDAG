@@ -13,11 +13,13 @@ from tempo_dag.ir_temporal import (
     StateKind,
     StateSpec,
     TemporalOptimizationError,
+    fuse_parameterized_conv1d_add,
     fuse_parameterized_matmul_add,
+    fuse_parameterized_scale_add,
     optimize_temporal_process,
     validate_temporal_rewrite,
 )
-from tempo_dag.ops.builtins import Add, MatMul, ReLU
+from tempo_dag.ops.builtins import Add, Conv1D, MatMul, Mul, ReLU
 
 
 def tensor(
@@ -98,6 +100,64 @@ def activation_process(*, extra_consumer: bool = False) -> Process:
     )
     return Process(
         process_id="activation_optimizer_demo",
+        kernels={"kernel": Kernel("kernel", graph=graph)},
+    )
+
+
+def conv_activation_process(*, parameter_bias: bool = True) -> Process:
+    values = {
+        "x": tensor("x", [1, 2, 8]),
+        "w": tensor("w", [3, 2, 3], layout="parameter"),
+        "bias": tensor(
+            "bias",
+            [1, 3, 6],
+            quant={"role": "parameter"} if parameter_bias else None,
+        ),
+        "conv_out": tensor("conv_out", [1, 3, 6]),
+        "biased": tensor("biased", [1, 3, 6]),
+        "out": tensor("out", [1, 3, 6]),
+    }
+    graph = Graph(
+        values=values,
+        ops={
+            "conv": Conv1D("conv", inputs=["x", "w"], outputs=["conv_out"]),
+            "add": Add("add", inputs=["conv_out", "bias"], outputs=["biased"]),
+            "relu": ReLU("relu", inputs=["biased"], outputs=["out"]),
+        },
+        graph_inputs=["x", "w", "bias"],
+        graph_outputs=["out"],
+    )
+    return Process(
+        process_id="conv_optimizer_demo",
+        kernels={"kernel": Kernel("kernel", graph=graph)},
+    )
+
+
+def scale_activation_process(*, parameter_scale: bool = True) -> Process:
+    values = {
+        "x": tensor("x", [2, 4]),
+        "scale": tensor(
+            "scale",
+            [2, 4],
+            quant={"role": "parameter"} if parameter_scale else None,
+        ),
+        "bias": tensor("bias", [2, 4], layout="parameter"),
+        "scaled": tensor("scaled", [2, 4]),
+        "biased": tensor("biased", [2, 4]),
+        "out": tensor("out", [2, 4]),
+    }
+    graph = Graph(
+        values=values,
+        ops={
+            "scale": Mul("scale", inputs=["x", "scale"], outputs=["scaled"]),
+            "add": Add("add", inputs=["scaled", "bias"], outputs=["biased"]),
+            "relu": ReLU("relu", inputs=["biased"], outputs=["out"]),
+        },
+        graph_inputs=["x", "scale", "bias"],
+        graph_outputs=["out"],
+    )
+    return Process(
+        process_id="scale_optimizer_demo",
         kernels={"kernel": Kernel("kernel", graph=graph)},
     )
 
@@ -209,6 +269,85 @@ def test_optimizer_skips_activation_with_multiple_add_consumers() -> None:
         "matmul_add_fused",
         "relu",
         "skip_add",
+    }
+
+
+def test_optimizer_fuses_conv1d_add_activation_chain() -> None:
+    result = optimize_temporal_process(
+        conv_activation_process(),
+        passes=(fuse_parameterized_conv1d_add,),
+    )
+    fused_ops = result.optimized.kernels["kernel"].graph.ops
+    fused_op = next(iter(fused_ops.values()))
+    graph_only_delta = cast(dict[str, object], result.to_dict()["graph_only_delta"])
+
+    assert result.changed is True
+    assert set(fused_ops) == {"conv_add_relu_fused"}
+    assert fused_op.op_type == "FusedConv1DAddActivation"
+    assert fused_op.inputs == ["x", "w", "bias"]
+    assert fused_op.outputs == ["out"]
+    assert fused_op.attrs["activation"] == "ReLU"
+    assert fused_op.attrs["fused_ops"] == ["conv", "add", "relu"]
+    assert "conv_out" not in result.optimized.kernels["kernel"].graph.values
+    assert "biased" not in result.optimized.kernels["kernel"].graph.values
+    assert result.optimized.kernels["kernel"].graph.values["w"].layout == "parameter"
+    assert cast(int, graph_only_delta["estimated_latency_cycles"]) < 0
+    assert cast(int, graph_only_delta["traffic_elements_per_timestep"]) < 0
+
+
+def test_optimizer_does_not_fuse_conv1d_runtime_bias() -> None:
+    result = optimize_temporal_process(
+        conv_activation_process(parameter_bias=False),
+        passes=(fuse_parameterized_conv1d_add,),
+    )
+
+    assert result.changed is False
+    assert set(result.optimized.kernels["kernel"].graph.ops) == {
+        "conv",
+        "add",
+        "relu",
+    }
+
+
+def test_optimizer_fuses_scale_add_activation_chain() -> None:
+    result = optimize_temporal_process(
+        scale_activation_process(),
+        passes=(fuse_parameterized_scale_add,),
+    )
+    fused_ops = result.optimized.kernels["kernel"].graph.ops
+    fused_op = next(iter(fused_ops.values()))
+    graph_only_delta = cast(dict[str, object], result.to_dict()["graph_only_delta"])
+
+    assert result.changed is True
+    assert set(fused_ops) == {"scale_add_relu_fused"}
+    assert fused_op.op_type == "FusedScaleAddActivation"
+    assert fused_op.inputs == ["x", "scale", "bias"]
+    assert fused_op.outputs == ["out"]
+    assert fused_op.attrs["activation"] == "ReLU"
+    assert fused_op.attrs["fused_ops"] == ["scale", "add", "relu"]
+    assert "scaled" not in result.optimized.kernels["kernel"].graph.values
+    assert "biased" not in result.optimized.kernels["kernel"].graph.values
+    assert result.optimized.kernels["kernel"].graph.values["scale"].quant == {
+        "role": "parameter"
+    }
+    assert result.optimized.kernels["kernel"].graph.values["bias"].layout == (
+        "parameter"
+    )
+    assert cast(int, graph_only_delta["estimated_latency_cycles"]) < 0
+    assert cast(int, graph_only_delta["traffic_elements_per_timestep"]) < 0
+
+
+def test_optimizer_does_not_fuse_runtime_scale() -> None:
+    result = optimize_temporal_process(
+        scale_activation_process(parameter_scale=False),
+        passes=(fuse_parameterized_scale_add,),
+    )
+
+    assert result.changed is False
+    assert set(result.optimized.kernels["kernel"].graph.ops) == {
+        "scale",
+        "add",
+        "relu",
     }
 
 
