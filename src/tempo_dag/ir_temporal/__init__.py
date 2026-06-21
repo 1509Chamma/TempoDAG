@@ -6,6 +6,8 @@ from .contract import (
     derive_temporal_execution_contract,
 )
 from .optimizer import (
+    FusedMatMulAdd,
+    FusedMatMulAddActivation,
     TemporalOptimizationError,
     TemporalOptimizationResult,
     TemporalRewritePass,
@@ -57,6 +59,8 @@ __all__ = [
     "TemporalOptimizationResult",
     "TemporalRewritePass",
     "TemporalRewriteRecord",
+    "FusedMatMulAdd",
+    "FusedMatMulAddActivation",
     "TemporalSchedule",
     "TemporalStorageKind",
     "TemporalStorageMapping",

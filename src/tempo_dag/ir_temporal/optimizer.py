@@ -16,6 +16,7 @@ from tempo_dag.ir_temporal.schedule import derive_temporal_schedule
 
 TemporalRewritePass = Callable[[Process], Process]
 STATELESS_CHAIN_FUSION_ATTR = "tempo_dag_fused_stateless_chain"
+_SUPPORTED_FUSED_ACTIVATIONS = frozenset({"ReLU", "Tanh", "Sigmoid", "GELU"})
 
 
 class TemporalOptimizationError(ValueError):
@@ -106,6 +107,49 @@ class FusedMatMulAdd(Operator):
             "n_dim": rhs.shape[1],
             "output_0_size": output.shape[0] * output.shape[1],
         }
+
+
+class FusedMatMulAddActivation(FusedMatMulAdd):
+    """Logical fused MatMul plus parameter-bias Add plus activation."""
+
+    OP_TYPE = "FusedMatMulAddActivation"
+
+    def validate(self, values: Mapping[str, Value]) -> None:
+        super().validate(values)
+        activation = self.attrs.get("activation")
+        if activation not in _SUPPORTED_FUSED_ACTIVATIONS:
+            raise InvalidOperatorInstanceError(
+                "FusedMatMulAddActivation requires a supported activation"
+            )
+
+    def estimate_fpga_cost(self, values: Mapping[str, Value]) -> FPGACost:
+        lhs = _lookup_value(values, self.inputs[0], self.op_type)
+        rhs = _lookup_value(values, self.inputs[1], self.op_type)
+        m_dim, k_dim = lhs.shape
+        _, n_dim = rhs.shape
+        work = m_dim * n_dim * k_dim
+        output_work = m_dim * n_dim
+        activation = self.attrs["activation"]
+        activation_cost = 1 if activation == "ReLU" else max(1, output_work // 2)
+        return FPGACost(
+            latency_cycles=max(1, work + 1 + activation_cost),
+            initiation_interval=1,
+            dsp=max(1, min(work, k_dim)),
+            lut=max(1, output_work * 2),
+            ff=max(1, output_work),
+            metadata={
+                "heuristic": "fused_matmul_add_activation",
+                "activation": activation,
+            },
+        )
+
+    def hls_template_path(self) -> str:
+        return "hls/operators/fused_mat_mul_add_activation.cpp.tpl"
+
+    def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
+        context = super().hls_context(values)
+        context["activation"] = self.attrs["activation"]
+        return context
 
 
 @dataclass(frozen=True)
@@ -214,7 +258,7 @@ def optimize_temporal_process(
 
 
 def fuse_parameterized_matmul_add(process: Process) -> Process:
-    """Fuse safe `MatMul -> Add(parameter bias)` chains inside kernels."""
+    """Fuse safe `MatMul -> Add(parameter bias)[ -> Activation]` chains."""
 
     optimized = deepcopy(process)
     for kernel_id, kernel in list(optimized.kernels.items()):
@@ -288,25 +332,49 @@ def _fuse_kernel_parameterized_matmul_add(kernel: Kernel) -> Kernel:
             continue
 
         matmul_op = graph.ops[matmul_id]
-        fused_id = f"{matmul_id}_{add_id}_fused"
-        output_id = add_op.outputs[0]
-        ops[fused_id] = FusedMatMulAdd(
+        add_output = add_op.outputs[0]
+        activation_id = _single_supported_activation_consumer(
+            graph,
+            consumers,
+            add_output,
+        )
+        activation_op = graph.ops[activation_id] if activation_id is not None else None
+        fused_id_parts = [matmul_id, add_id]
+        output_id = add_output
+        removed_intermediates = [matmul_input]
+        fused_cls: type[Operator] = FusedMatMulAdd
+        attrs: dict[str, object] = {
+            STATELESS_CHAIN_FUSION_ATTR: True,
+            "fused_ops": [matmul_id, add_id],
+            "removed_intermediate": matmul_input,
+            "removed_intermediates": list(removed_intermediates),
+        }
+        if activation_op is not None:
+            fused_id_parts.append(activation_id or "")
+            output_id = activation_op.outputs[0]
+            removed_intermediates.append(add_output)
+            fused_cls = FusedMatMulAddActivation
+            attrs["activation"] = activation_op.op_type
+            attrs["fused_ops"] = [matmul_id, add_id, activation_id]
+            attrs["removed_intermediates"] = list(removed_intermediates)
+
+        fused_id = "_".join(fused_id_parts) + "_fused"
+        ops[fused_id] = fused_cls(
             fused_id,
             inputs=[matmul_op.inputs[0], matmul_op.inputs[1], bias_input],
             outputs=[output_id],
-            attrs={
-                STATELESS_CHAIN_FUSION_ATTR: True,
-                "fused_ops": [matmul_id, add_id],
-                "removed_intermediate": matmul_input,
-            },
+            attrs=attrs,
         )
         del ops[matmul_id]
         del ops[add_id]
-        if (
-            matmul_input not in graph.graph_outputs
-            and matmul_input not in graph.graph_inputs
-        ):
-            values.pop(matmul_input, None)
+        if activation_id is not None:
+            del ops[activation_id]
+        for intermediate in removed_intermediates:
+            if (
+                intermediate not in graph.graph_outputs
+                and intermediate not in graph.graph_inputs
+            ):
+                values.pop(intermediate, None)
         break
 
     if ops == graph.ops and values == graph.values:
@@ -323,6 +391,25 @@ def _fuse_kernel_parameterized_matmul_add(kernel: Kernel) -> Kernel:
         ),
         clock_id=kernel.clock_id,
     )
+
+
+def _single_supported_activation_consumer(
+    graph: Graph,
+    consumers: dict[str, list[str]],
+    value_id: str,
+) -> str | None:
+    value_consumers = consumers.get(value_id, [])
+    if len(value_consumers) != 1:
+        return None
+    consumer_id = value_consumers[0]
+    consumer = graph.ops[consumer_id]
+    if (
+        consumer.op_type in _SUPPORTED_FUSED_ACTIVATIONS
+        and len(consumer.inputs) == 1
+        and len(consumer.outputs) == 1
+    ):
+        return consumer_id
+    return None
 
 
 def _validate_parameter_identity(
@@ -406,6 +493,7 @@ __all__ = [
     "TemporalRewritePass",
     "TemporalRewriteRecord",
     "FusedMatMulAdd",
+    "FusedMatMulAddActivation",
     "fuse_parameterized_matmul_add",
     "optimize_temporal_process",
     "validate_temporal_rewrite",
