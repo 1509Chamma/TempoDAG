@@ -20,6 +20,7 @@ from .optimizer import (
     fuse_parameterized_matmul_add,
     fuse_parameterized_scale_add,
     optimize_temporal_process,
+    share_compatible_temporal_buffers,
     validate_temporal_rewrite,
 )
 from .process import (
@@ -81,6 +82,7 @@ __all__ = [
     "fuse_parameterized_matmul_add",
     "fuse_parameterized_scale_add",
     "optimize_temporal_process",
+    "share_compatible_temporal_buffers",
     "validate_temporal_rewrite",
     "validate_temporal_process",
 ]

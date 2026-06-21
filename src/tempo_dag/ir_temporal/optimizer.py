@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.op import FPGACost, InvalidOperatorInstanceError, Operator
 from tempo_dag.ir.value import Value, ValueType
-from tempo_dag.ir_temporal.process import Edge0, EdgeDelta, Kernel, Process
+from tempo_dag.ir_temporal.process import BufferSpec, Edge0, EdgeDelta, Kernel, Process
 from tempo_dag.ir_temporal.report import (
     TemporalBaselineReport,
     derive_temporal_baseline_report,
@@ -545,6 +545,35 @@ def fuse_parameterized_scale_add(process: Process) -> Process:
     return optimized
 
 
+def share_compatible_temporal_buffers(process: Process) -> Process:
+    """Annotate compatible temporal buffers that may share physical storage."""
+
+    optimized = deepcopy(process)
+    groups: dict[tuple[object, ...], list[str]] = {}
+    for buffer_id, buffer in sorted(optimized.buffers.items()):
+        groups.setdefault(_buffer_sharing_signature(buffer), []).append(buffer_id)
+
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        physical_buffer_id = group[0]
+        for buffer_id in group:
+            buffer = optimized.buffers[buffer_id]
+            metadata = dict(buffer.metadata)
+            metadata["physical_buffer_id"] = physical_buffer_id
+            metadata["shared_buffer_group"] = list(group)
+            optimized.buffers[buffer_id] = BufferSpec(
+                buffer_id=buffer.buffer_id,
+                dtype=buffer.dtype,
+                shape=buffer.shape,
+                depth=buffer.depth,
+                axes=buffer.axes,
+                clock_id=buffer.clock_id,
+                metadata=metadata,
+            )
+    return optimized
+
+
 def validate_temporal_rewrite(original: Process, optimized: Process) -> None:
     """Validate invariants every temporal graph optimizer pass must preserve."""
 
@@ -572,6 +601,10 @@ def validate_temporal_rewrite(original: Process, optimized: Process) -> None:
         if optimized_kernel.graph.graph_outputs != original_kernel.graph.graph_outputs:
             raise TemporalOptimizationError("rewrite must preserve graph outputs")
         _validate_parameter_identity(
+            original_kernel.graph.values,
+            optimized_kernel.graph.values,
+        )
+        _validate_preserved_value_metadata(
             original_kernel.graph.values,
             optimized_kernel.graph.values,
         )
@@ -915,6 +948,36 @@ def _validate_parameter_identity(
             )
 
 
+def _validate_preserved_value_metadata(
+    original_values: dict[str, Value],
+    optimized_values: dict[str, Value],
+) -> None:
+    for value_id, original_value in original_values.items():
+        optimized_value = optimized_values.get(value_id)
+        if optimized_value is None:
+            continue
+        if optimized_value.to_dict() != original_value.to_dict():
+            raise TemporalOptimizationError(
+                "rewrite must preserve value dtype, shape, and metadata"
+            )
+
+
+def _buffer_sharing_signature(buffer: BufferSpec) -> tuple[object, ...]:
+    metadata = {
+        key: value
+        for key, value in buffer.metadata.items()
+        if key not in {"physical_buffer_id", "shared_buffer_group"}
+    }
+    return (
+        buffer.dtype,
+        buffer.shape,
+        buffer.depth,
+        buffer.axes,
+        buffer.clock_id,
+        tuple(sorted(metadata.items())),
+    )
+
+
 def _edge0_signature(edges: list[Edge0]) -> tuple[tuple[str, str, str | None], ...]:
     return tuple(sorted((edge.source, edge.target, edge.value_id) for edge in edges))
 
@@ -1053,5 +1116,6 @@ __all__ = [
     "fuse_parameterized_matmul_add",
     "fuse_parameterized_scale_add",
     "optimize_temporal_process",
+    "share_compatible_temporal_buffers",
     "validate_temporal_rewrite",
 ]

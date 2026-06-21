@@ -7,6 +7,7 @@ from tempo_dag.ir.graph import Graph
 from tempo_dag.ir.op import Operator
 from tempo_dag.ir.value import Value, ValueType
 from tempo_dag.ir_temporal import (
+    BufferSpec,
     EdgeDelta,
     Kernel,
     Process,
@@ -17,6 +18,7 @@ from tempo_dag.ir_temporal import (
     fuse_parameterized_matmul_add,
     fuse_parameterized_scale_add,
     optimize_temporal_process,
+    share_compatible_temporal_buffers,
     validate_temporal_rewrite,
 )
 from tempo_dag.ops.builtins import Add, Conv1D, MatMul, Mul, ReLU
@@ -159,6 +161,35 @@ def scale_activation_process(*, parameter_scale: bool = True) -> Process:
     return Process(
         process_id="scale_optimizer_demo",
         kernels={"kernel": Kernel("kernel", graph=graph)},
+    )
+
+
+def buffer_sharing_process() -> Process:
+    return Process(
+        process_id="buffer_sharing_demo",
+        buffers={
+            "returns_window": BufferSpec(
+                "returns_window",
+                dtype="float32",
+                shape=(4,),
+                depth=16,
+                axes=("feature",),
+            ),
+            "vol_window": BufferSpec(
+                "vol_window",
+                dtype="float32",
+                shape=(4,),
+                depth=16,
+                axes=("feature",),
+            ),
+            "long_window": BufferSpec(
+                "long_window",
+                dtype="float32",
+                shape=(4,),
+                depth=32,
+                axes=("feature",),
+            ),
+        },
     )
 
 
@@ -351,6 +382,25 @@ def test_optimizer_does_not_fuse_runtime_scale() -> None:
     }
 
 
+def test_optimizer_annotates_compatible_buffer_sharing() -> None:
+    result = optimize_temporal_process(
+        buffer_sharing_process(),
+        passes=(share_compatible_temporal_buffers,),
+    )
+    buffers = result.optimized.buffers
+
+    assert result.changed is True
+    assert buffers["returns_window"].metadata["physical_buffer_id"] == (
+        "returns_window"
+    )
+    assert buffers["vol_window"].metadata["physical_buffer_id"] == "returns_window"
+    assert buffers["returns_window"].metadata["shared_buffer_group"] == [
+        "returns_window",
+        "vol_window",
+    ]
+    assert "physical_buffer_id" not in buffers["long_window"].metadata
+
+
 def test_rewrite_rejects_process_identity_changes() -> None:
     original = optimizer_process()
     optimized = deepcopy(original)
@@ -394,4 +444,22 @@ def test_rewrite_rejects_parameter_metadata_changes() -> None:
     optimized.kernels["kernel"].graph.values["unused_param"].axes = ["changed"]
 
     with pytest.raises(TemporalOptimizationError, match="parameter dtype"):
+        validate_temporal_rewrite(original, optimized)
+
+
+def test_rewrite_rejects_surviving_value_quantization_changes() -> None:
+    original = optimizer_process()
+    optimized = deepcopy(original)
+    original.kernels["kernel"].graph.values["out"].quant = {
+        "bit_width": 16,
+        "integer_bits": 8,
+        "fractional_bits": 8,
+    }
+    optimized.kernels["kernel"].graph.values["out"].quant = {
+        "bit_width": 8,
+        "integer_bits": 4,
+        "fractional_bits": 4,
+    }
+
+    with pytest.raises(TemporalOptimizationError, match="value dtype"):
         validate_temporal_rewrite(original, optimized)
