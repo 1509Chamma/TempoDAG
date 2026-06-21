@@ -1,6 +1,6 @@
 absl-py==2.4.0
 astunparse==1.6.3
-black==26.1.0
+black==26.5.1
 certifi==2026.2.25
 charset-normalizer==3.4.7
 click==8.3.2
