@@ -3,7 +3,7 @@ astunparse==1.6.3
 black==26.5.1
 certifi==2026.2.25
 charset-normalizer==3.4.7
-click==8.4.1
+click==8.4.2
 colorama==0.4.6
 coverage==7.14.3
 filelock==3.25.2
