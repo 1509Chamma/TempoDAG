@@ -52,7 +52,7 @@ tensorflow==2.21.0
 termcolor==3.3.0
 tf2onnx==1.17.0
 torch==2.12.1
-typing_extensions==4.15.0
+typing_extensions==4.16.0
 urllib3==2.7.0
 wheel==0.47.0
 wrapt==2.2.2
