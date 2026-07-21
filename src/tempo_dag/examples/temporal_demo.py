@@ -147,6 +147,12 @@ def run_demo(output_dir: Path = OUTPUT_DIR) -> TemporalDemoReport:
         golden_trace,
         output_dir,
         stem="temporal_demo",
+        parameters={
+            # ONNX initializers from build_demo_temporal_onnx_model; the
+            # testbench materializes these so csim asserts real outputs.
+            "conv_weight": [[[0.25, 0.5, 0.25]]],
+            "bias": [[[0.125]]],
+        },
     )
 
     step_metrics = _build_step_metrics(

@@ -23,9 +23,7 @@ For new public IR-facing imports, prefer:
 - `tempo_dag.ir.registry`
 - `tempo_dag.ir_temporal`
 
-The current implementation still lives under `tempo_dag.*`, and that namespace
-remains supported internally. `tempo_dag.ir_graph` is kept as a compatibility
-alias for now.
+The current implementation lives under the `tempo_dag.*` namespace.
 
 ## Compilation Flow Today
 

@@ -12,6 +12,28 @@ representative-dataset calibration, device metadata, and operator-level HLS
 template rendering. The next work layers temporal state, delayed dependencies,
 verification, and streaming hardware generation on top of that core.
 
+## Status (July 2026)
+
+Most of this roadmap is now complete. The milestone plan below is kept as the
+original design record; here is where things actually stand:
+
+| milestone | status |
+|---|---|
+| M1 Temporal semantics & hardware contract | **done** — temporal IR with state, delay edges, buffers, legality validation |
+| M2 Graph-level HLS artifact path | **done** — fixed-point burst-loop + transformer emitters |
+| M3 Baseline scheduler & cost model | **done** — recurrence-aware cost model, forensic II attribution |
+| M4 Temporal graph optimizer | **done** — fusion, II-bound streaming reframe, C-slow |
+| M5 HLS directive optimizer | **done** — fixed-point datapath, LUT activations, core binding |
+| M6 Judge-fast submission artifact | **partial** — benchmark harness + visual summary done; live demo & video pending |
+| M7 **Board validation** | **not started — the funding gate** (place-and-route, on-silicon latency/power, trained-model accuracy) |
+
+Five architectures (RNN, GRU, LSTM, diagonal-linear SSM, transformer block)
+are emitted by the compiler and **C/RTL co-simulation verified** on the KV260.
+Measured results are in [benchmarks.md](benchmarks.md), and the
+[walkthroughs](../research/walkthrough/) reproduce the core findings.
+The remaining work is **M7**: everything to date is proven in Vitis simulation,
+and a physical board converts that into on-silicon measurements.
+
 ## Dream Platform Milestones
 
 The long-term target is a platform that turns a temporal model graph into
@@ -435,5 +457,3 @@ Compiler capabilities:
 - Keep the public repo AMD-competition focused until submission, then revisit
   broader naming and packaging after the contest.
 
-For the current implementation checklist, see
-[30-Day Roadmap](roadmap-30day.md).

@@ -479,6 +479,10 @@ class ReLU(UnaryElementwiseOperator):
     OP_TYPE = "ReLU"
 
 
+class Sqrt(UnaryElementwiseOperator):
+    OP_TYPE = "Sqrt"
+
+
 class GELU(UnaryElementwiseOperator):
     OP_TYPE = "GELU"
 
@@ -592,11 +596,14 @@ class MatMul(BuiltinOperator):
     def hls_context(self, values: Mapping[str, Value]) -> dict[str, object]:
         context = super().hls_context(values)
         lhs, rhs = self._input_values(values)
+        k_dim = lhs.shape[1]
         context.update(
             {
                 "m_dim": lhs.shape[0],
-                "k_dim": lhs.shape[1],
+                "k_dim": k_dim,
                 "n_dim": rhs.shape[1],
+                # next power of two >= k_dim, for the balanced adder tree
+                "k_dim_pow2": 1 << max(0, int(k_dim - 1).bit_length()),
             }
         )
         return context
@@ -1303,6 +1310,7 @@ BUILTIN_OPERATORS = [
     Concat,
     Slice,
     Sigmoid,
+    Sqrt,
     Tanh,
     ReLU,
     GELU,

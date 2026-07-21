@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Cache
+*.cache
+.cache/
+
+# Test / coverage artifacts
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+
+.venv/*
+examples/generated/
+
+# Research: only the walkthroughs, lab helpers, and requirements are public.
+# The detailed research corpus (notebooks, log, design notes) is kept LOCAL.
+research/notebooks/
+research/LOG.md
+research/amd-open-hardware-winners-2023-2025.md
+research/fixed-point-verification-framework.md
+research/fpga-time-series-model-roadmap.md
+research/legality-contract-extension.md
+research/library-positioning.md
+research/temporal-dag-mapping-and-scheduling.md
+research/temporal-ir-design.md
+research/temporal-stateful-ml-compilation-landscape.md
+research/walkthrough/*.ipynb
+research/**/.ipynb_checkpoints/
+research/**/__pycache__/
+
+
+# Vitis proof harness outputs (regenerable)
+experiments/hls_proof/results/
+experiments/benchmark/results/
+.venv-hls4ml/
+
+# Internal planning/strategy docs and drafts (kept local, not public)
+docs/platform-vision.md
+docs/submission-strategy.md
+docs/roadmap-30day.md
+docs/image.png

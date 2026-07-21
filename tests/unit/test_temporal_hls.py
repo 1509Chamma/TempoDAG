@@ -31,7 +31,7 @@ def test_render_temporal_process_hls_includes_buffers_and_step_function() -> Non
 
     assert "Temporal process: demo_process" in rendered
     assert "static float rolling_mean_node_buffer" in rendered
-    assert "void demo_process_step()" in rendered
+    assert "void demo_process_step(" in rendered
 
 
 def test_render_temporal_artifact_includes_testbench_trace_comments() -> None:
@@ -48,7 +48,7 @@ def test_render_temporal_artifact_includes_testbench_trace_comments() -> None:
     artifact = render_temporal_artifact_from_trace(process, trace)
 
     assert "expected output output" in artifact.testbench_hls
-    assert "demo_process_step();" in artifact.testbench_hls
+    assert "demo_process_step(" in artifact.testbench_hls
     assert "RollingMean attrs" in artifact.process_hls
     assert "Running temporal golden trace (" in artifact.testbench_hls
 

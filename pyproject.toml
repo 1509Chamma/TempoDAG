@@ -1,10 +1,21 @@
+# Research notebooks and experiment scripts (research/, experiments/) are
+# exploratory code held to a lighter standard than the shipped library, so the
+# strict formatters/linters below scope to src/, tests/, and scripts/.
+
 [tool.black]
 line-length = 88
 target-version = ["py312"]
+extend-exclude = '''
+/(
+    research
+  | experiments
+)/
+'''
 
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+extend-exclude = ["research", "experiments"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
@@ -15,3 +26,8 @@ known-first-party = ["tempo_dag"]
 
 [tool.pyrefly]
 python-version = "3.12"
+project-includes = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

@@ -51,7 +51,7 @@ def test_temporal_lowering_connects_to_trace_driven_hls() -> None:
     )
 
     assert report.validation_passed is True
-    assert "void integration_demo_step()" in artifact.process_hls
+    assert "void integration_demo_step(" in artifact.process_hls
     assert "expected output output" in artifact.testbench_hls
 
 
