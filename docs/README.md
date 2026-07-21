@@ -1,49 +1,29 @@
 # Documentation
 
-This folder documents TempoDAG, a compiler for streaming time-series models
-with stateful temporal dataflow.
+Documentation for TempoDAG, a compiler for streaming time-series models with
+stateful temporal dataflow.
 
-## Start Here
+## Start here
 
-**New to TempoDAG?**
-- [Platform Vision](platform-vision.md): Strategic direction and research
-  synthesis
-- [Architecture](architecture.md): Current compiler layers and IR design
-- [30-Day Roadmap](roadmap-30day.md): Implementation checklist and success
-  criteria
+- **[Explainer](explainer.md)** — what TempoDAG is and how it works, assuming
+  no hardware background, with diagrams.
+- **[Benchmarks](benchmarks.md)** — measured results and comparisons.
+- **[Research walkthroughs](../research/walkthrough/)** — three short,
+  plain-language notebooks (accuracy, speed, attention).
 
-**Contributing or extending?**
-- [Contributing Guide](../CONTRIBUTING.md): Pull request expectations and local
-  validation
-- [Development Guide](development.md): Day-to-day workflow and extension
-  patterns
-- [Calibration Guide](calibration.md): Quantization and representative dataset
-  sampling
-- [Environment Setup](environment-setup.md): Local environment and hook setup
-- [Security Policy](../SECURITY.md): Supported security reporting process
+## Architecture & concepts
 
-**Reference**
-- [Roadmap](roadmap.md): Stage-based implementation direction
-- [Competition Submission Strategy](submission-strategy.md): AMD-focused demo
-  and packaging plan
-- [Temporal IR Guide](temporal-ir-guide.md): Stateful dataflow concepts
-- [Temporal Execution Contract](temporal-execution-contract.md): Execution and
-  HLS lowering semantics
-- [Quickstart](temporal-quickstart.md): First temporal model demo
+- [Architecture](architecture.md) — compiler layers and IR design.
+- [Temporal IR guide](temporal-ir-guide.md) — stateful dataflow concepts.
+- [Temporal execution contract](temporal-execution-contract.md) — execution and
+  HLS lowering semantics.
+- [Roadmap](roadmap.md) — milestone status and what remains.
 
-## Reading Order
+## Getting set up & contributing
 
-### First Time
-1. Read [Platform Vision](platform-vision.md) for strategic context.
-2. Read [Architecture](architecture.md) for the compiler layers.
-3. Skim [30-Day Roadmap](roadmap-30day.md) for what is being built next.
-
-### Contributing
-1. Read [Contributing Guide](../CONTRIBUTING.md) for expectations.
-2. Read [Development Guide](development.md) for workflow.
-3. Check [Roadmap](roadmap.md) for current milestones.
-4. Read section docs, such as the Calibration Guide, as needed.
-
-### Understanding the Vision
-1. [Platform Vision](platform-vision.md): strategic alignment with research
-2. References to research reports in `research/` folder for deeper background
+- [Environment setup](environment-setup.md) — local environment and hooks.
+- [Temporal quickstart](temporal-quickstart.md) — a first temporal model.
+- [Development guide](development.md) — day-to-day workflow and extension.
+- [Calibration guide](calibration.md) — quantization and dataset sampling.
+- [Contributing guide](../CONTRIBUTING.md) — pull-request expectations.
+- [Security policy](../SECURITY.md) — reporting process.

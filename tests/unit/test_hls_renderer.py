@@ -120,8 +120,10 @@ def test_render_operator_hls_renders_matmul_loop_pragmas():
 
     assert "const float lhs[2][3]" in rendered
     assert "const float rhs[3][4]" in rendered
-    assert "#pragma HLS UNROLL factor=4" in rendered
-    assert "out[row][col] = acc;" in rendered
+    # tree template: dead UNROLL factor=4 removed (forensics); partition + tree
+    assert "#pragma HLS ARRAY_PARTITION variable=rhs complete dim=1" in rendered
+    assert "matmul_tree_loop:" in rendered
+    assert "out[row][col] = tree[0];" in rendered
 
 
 def test_render_operator_hls_renders_conv1d_kernel_shape():

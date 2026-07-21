@@ -153,7 +153,7 @@ class NumericalParityConfig:
     ) -> NumericalParityConfig:
         if config is None:
             return cls()
-        if isinstance(config, cls):
+        if isinstance(config, NumericalParityConfig):
             return config
 
         metrics_value = _coerce_str_sequence(config.get("metrics"), DEFAULT_METRICS)
