@@ -6,4 +6,4 @@ ipykernel==6.29.5
 nbconvert==7.17.1
 papermill==2.7.0
 matplotlib==3.11.1
-pandas==2.2.3
+pandas==3.0.5
