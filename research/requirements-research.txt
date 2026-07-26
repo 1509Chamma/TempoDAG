@@ -1,7 +1,7 @@
 # Research/notebook tooling (kept separate from runtime requirements.txt).
 # The experiments RUN on the core stack (numpy/torch); these add authoring,
 # git-friendly notebooks, headless re-execution, tables, and plots.
-jupytext==1.16.4
+jupytext==1.19.5
 ipykernel==6.29.5
 nbconvert==7.16.4
 papermill==2.6.0
