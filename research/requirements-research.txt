@@ -2,7 +2,7 @@
 # The experiments RUN on the core stack (numpy/torch); these add authoring,
 # git-friendly notebooks, headless re-execution, tables, and plots.
 jupytext==1.19.5
-ipykernel==6.29.5
+ipykernel==7.3.0
 nbconvert==7.17.1
 papermill==2.7.0
 matplotlib==3.11.1
