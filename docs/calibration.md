@@ -4,7 +4,7 @@
 
 The calibration package exists to answer a practical deployment question:
 
-How do we choose a compact subset of data that still captures the behaviour of
+How should a compact subset of data be chosen so it still captures the behaviour of
 the full dataset closely enough for quantization and downstream hardware
 experiments?
 

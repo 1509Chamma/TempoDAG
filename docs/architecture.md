@@ -38,9 +38,13 @@ The current end-to-end flow is:
 5. Pair the graph with board metadata from the device registry when reasoning
    about hardware targets.
 
-This is a strong baseline. The temporal IR layer adds process-level structure
-above the existing same-timestep graph, but the project is still short of
-graph-level scheduling, multi-operator lowering, or board deployment.
+The temporal IR layer adds process-level structure above the same-timestep
+graph, and the codegen layer lowers whole processes: a float per-step emitter
+(`codegen/hls/temporal_generator.py`), the fixed-point burst-loop emitter
+behind the headline results (`temporal_fixedpoint_generator.py`), and a
+transformer-block emitter (`temporal_transformer_generator.py`). Each pairs
+with an asserting testbench generated from a golden trace, so every emitted
+design carries its own verification.
 
 ## Package Map
 
@@ -155,6 +159,18 @@ decisions.
   integration
 - `Dockerfile`: A reproducible Python 3.12-based development container
 
+## Why emit HLS rather than RTL
+
+Since the scheduling analysis predicts the hardware, one could ask why the
+compiler emits C++ for a HLS tool at all instead of writing RTL directly.
+Deliberate reasons: the HLS layer supplies verified arithmetic primitives
+(`ap_fixed` semantics that the oracle mirrors exactly), device-aware
+technology mapping and timing closure across parts, and fast operator
+development — a new operator is a few lines of C plus its oracle mirror,
+not a hand-timed datapath. The analysis constrains the tool rather than
+replacing it; emitting scheduled RTL directly from the compiler's own
+certified schedule is an open research direction, not a current claim.
+
 ## Extension Points
 
 The current design already exposes several useful seams:
@@ -168,16 +184,19 @@ The current design already exposes several useful seams:
 
 ## Current Boundaries
 
-The most important architectural boundary to understand is that the repo is
-currently stronger on front-end modelling than on final hardware emission.
+In practice, today:
 
-In practice that means:
-
-- IR construction is real and tested
-- Temporal process scaffolding and same-timestep DAG validation are real and
-  tested
-- Operator validation and template rendering are real and tested
-- Calibration utilities are real and tested
-- End-to-end recurrent lowering, hardware scheduling, deployment packaging, and
-  board execution are still future work
+- IR construction, temporal process validation, operator validation, and
+  calibration utilities are real and tested.
+- End-to-end lowering is real: five architectures (RNN, GRU, LSTM,
+  diagonal-linear SSM, transformer block) are emitted from the IR and
+  C/RTL co-simulation verified on the KV260 target — see
+  [benchmarks](benchmarks.md).
+- The optimizer currently ships stateless-chain fusion and buffer-sharing
+  passes; the temporal passes proven in the research notebooks (delay-chain
+  collapsing, nested-window sharing, recurrence-aware II) are staged for
+  promotion behind a legality-contract extension.
+- Place-and-route timing closure and on-board execution are the next phase
+  (see the [roadmap](roadmap.md)); everything to date is Vitis
+  simulation-verified.
 

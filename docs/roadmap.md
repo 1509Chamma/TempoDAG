@@ -25,7 +25,7 @@ original design record; here is where things actually stand:
 | M4 Temporal graph optimizer | **done** — fusion, II-bound streaming reframe, C-slow |
 | M5 HLS directive optimizer | **done** — fixed-point datapath, LUT activations, core binding |
 | M6 Judge-fast submission artifact | **partial** — benchmark harness + visual summary done; live demo & video pending |
-| M7 **Board validation** | **not started — the funding gate** (place-and-route, on-silicon latency/power, trained-model accuracy) |
+| M7 **Board validation** | **next phase** — acquire a KV260 and validate on silicon (place-and-route, latency/power, trained-model accuracy) |
 
 Five architectures (RNN, GRU, LSTM, diagonal-linear SSM, transformer block)
 are emitted by the compiler and **C/RTL co-simulation verified** on the KV260.

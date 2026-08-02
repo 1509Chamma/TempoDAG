@@ -21,6 +21,11 @@ extend-exclude = ["research", "experiments"]
 select = ["E", "F", "I", "B", "UP"]
 ignore = []
 
+[tool.ruff.lint.per-file-ignores]
+# Tutorials are jupytext notebooks: imports belong to the cell that
+# introduces them, not a header block.
+"tutorials/*" = ["E402", "I001", "B007"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["tempo_dag"]
 

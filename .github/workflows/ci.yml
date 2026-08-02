@@ -92,12 +92,12 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install NumPy
-        run: python -m pip install numpy
-      - name: Reproduce the core findings (pure NumPy)
+      - name: Install NumPy + notebook runner
+        run: python -m pip install numpy nbconvert ipykernel
+      - name: Re-execute the demo notebooks (pure NumPy)
         run: |
-          python research/walkthrough/2_why_it_is_fast.py
-          python research/walkthrough/3_attention_the_fpga_way.py
+          python -m nbconvert --to notebook --execute --inplace research/walkthrough/2_why_it_is_fast.ipynb
+          python -m nbconvert --to notebook --execute --inplace research/walkthrough/3_attention_the_fpga_way.ipynb
 
   docker:
     name: Docker build

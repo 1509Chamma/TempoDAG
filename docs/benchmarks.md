@@ -1,5 +1,10 @@
 # Benchmarks
 
+> The cost model behind these numbers is validated on a 26-design
+> pre-registered campaign — hidden-size/input-width/depth sweeps and seven
+> published recurrent cells — in
+> [cost-model-validation.md](cost-model-validation.md).
+
 All FPGA figures are compiled to the AMD Kria **KV260**
 (`xck26-sfvc784-2LV-c`), 5 ns target clock, and **C/RTL co-simulation
 verified** against a fixed-point oracle. CPU figures are NumPy 2.x and
@@ -9,8 +14,8 @@ an interactive artifact (see [Visual summary](#visual-summary)).
 
 > **Honest status:** these are C-synthesis + co-simulation results, not
 > place-and-route or on-board measurements. Timing closure on real fabric,
-> on-silicon latency/power, and accuracy on trained models require a physical
-> board — see the README's "What a test board unlocks."
+> on-silicon latency/power, and accuracy on trained models are the next phase
+> of the research — see the README's "Next step: hardware validation."
 
 ## Per-sample streaming latency
 
@@ -47,6 +52,24 @@ Notes: LSTM at 92% DSP is the single-model fit ceiling at H=16; DSP double-pump
 or a narrower Q relieves it. The transformer needs wider integer headroom
 (Q8.16) than the recurrent archs (Q6.12) because attention scores and FFN
 pre-activations exceed Q6.12's range.
+
+## Post-route timing (Vivado place-and-route, no board required)
+
+Out-of-context implementation places every LUT/DSP on the physical KV260
+fabric and routes real wires; the achieved critical path after routing is
+the strongest timing evidence available without silicon.
+
+| design | csynth estimate | post-route CP | 5 ns budget | post-route LUT / FF / DSP |
+|---|---:|---:|---|---|
+| diag16 | 3.37 ns | 4.097 ns | **met** | 1,779 / 1,175 / 90 |
+| rnn16 | 3.63 ns | 4.755 ns | **met** | 5,975 / 4,188 / 312 |
+| gru16 | 3.61 ns | 4.928 ns | **met** | 18,426 / 10,517 / 951 |
+
+Routing costs roughly a nanosecond over the synthesis estimate — which is
+exactly why this step exists — and all three designs still close, so the
+60 ns/sample (GRU/RNN) and 20 ns/sample (SSM) figures hold at the
+post-route level. The GRU's 72 ps margin is honest: tight, met, and the
+first number a board bring-up would re-confirm.
 
 ## Where the speed comes from (optimization ladder)
 
@@ -98,7 +121,5 @@ Streams-to-saturate = II, so the 87-DSP diagonal engine needs only 4 streams
 ## Visual summary
 
 An interactive one-page benchmark readout (log-scale latency chart,
-optimization ladder, hardware table, window-independence) is published as a
-Claude artifact. Regenerate or view it from the source at
-`experiments/benchmark/` results, or open the shared artifact link kept with
-the project.
+optimization ladder, hardware table, window-independence) can be regenerated
+from the result data under `experiments/benchmark/`.

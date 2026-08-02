@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use TempoDAG in your research, please cite it as below."
+title: "TempoDAG: a compiler for streaming time-series models on FPGAs"
+authors:
+  - family-names: "Chamma"
+    given-names: "Abdul-Rahman"
+repository-code: "https://github.com/1509Chamma/TempoDAG"
+license: MIT
+date-released: "2026-08-02"
+keywords:
+  - FPGA
+  - high-level synthesis
+  - compiler
+  - time series
+  - recurrent neural networks
+  - state-space models
+  - initiation interval
+  - formal verification
+  - Lean 4
+abstract: >-
+  TempoDAG compiles streaming time-series models (recurrent cells,
+  state-space models, temporal CNNs, attention variants) into verified
+  fixed-point FPGA accelerators. Its temporal intermediate representation
+  makes key hardware properties - initiation interval and resource usage -
+  statically predictable, mechanically certifiable against machine-checked
+  scheduling theorems, and empirically verifiable by C/RTL co-simulation,
+  with predictions pre-registered before synthesis.

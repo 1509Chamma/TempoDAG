@@ -45,7 +45,7 @@ research/library-positioning.md
 research/temporal-dag-mapping-and-scheduling.md
 research/temporal-ir-design.md
 research/temporal-stateful-ml-compilation-landscape.md
-research/walkthrough/*.ipynb
+# walkthrough notebooks are the published demos (pre-executed)
 research/**/.ipynb_checkpoints/
 research/**/__pycache__/
 
@@ -60,3 +60,27 @@ docs/platform-vision.md
 docs/submission-strategy.md
 docs/roadmap-30day.md
 docs/image.png
+
+# Tutorial outputs (regenerable)
+tutorials/output/
+
+# Cost-model validation campaign outputs (regenerable; table lands in docs)
+research/results/cmv_*/
+
+# Internal research material (local only, never published):
+# strategy docs, exploratory scripts, and notebook infrastructure. The
+# public research surface is walkthrough/ + cost_model_validation.py +
+# results/ + README.
+research/novelty-and-prior-art.md
+research/predictive_cost_model.py
+research/ir_recurrence_demo.py
+research/block_parallel_ssm.py
+research/lab/
+
+# Accuracy-suite downloads (regenerable)
+experiments/accuracy/data/
+
+# Lean build artifacts
+proofs/.lake/
+research/external-review-brief.md
+research/two-paper-plan.md

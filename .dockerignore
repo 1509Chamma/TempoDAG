@@ -1,0 +1,14 @@
+# Keep the image lean: exclude local environments, tool outputs, and caches.
+.venv/
+.venv-hls4ml/
+.git/
+.github/
+.pytest_cache/
+**/__pycache__/
+tutorials/output/
+research/results/
+experiments/hls_proof/results/
+experiments/benchmark/results/
+*.onnx
+Dockerfile
+.dockerignore

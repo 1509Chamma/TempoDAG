@@ -143,7 +143,7 @@ The two words in that picture that need explaining are **"Temporal IR"** and
 
 Here's the insight the whole project is built on, in an analogy.
 
-One step of a GRU is a fair chunk of math — on our chip it takes about **440
+One step of a GRU is a fair chunk of math — on the chip it takes about **440
 clock ticks** from start to finish. The naive conclusion is: *one prediction =
 440 ticks, so to go faster you must do less math.* **That's wrong**, and seeing
 why is the "aha".
@@ -184,7 +184,7 @@ nanoseconds** (60 billionths of a second) per prediction. Engineers call this
 making it as small as physically possible is what the TempoDAG optimizer does.
 
 *(If you want to see this proven — that overlapping gives the exact same answer,
-down to the last bit — [walkthrough 2](../research/walkthrough/2_why_it_is_fast.py)
+down to the last bit — [walkthrough 2](../research/walkthrough/2_why_it_is_fast.ipynb)
 does it in a few lines of Python.)*
 
 ---
@@ -238,13 +238,13 @@ units), not a loose fudge factor.
 
 And the big worry — *does rounding to fixed-point ruin the model's accuracy?* —
 is answered head-on in [walkthrough
-1](../research/walkthrough/1_does_the_hardware_stay_accurate.py): a real GRU
+1](../research/walkthrough/1_does_the_hardware_stay_accurate.ipynb): a real GRU
 trained on a chaotic forecasting benchmark keeps **99% of its accuracy** after
 being squeezed into the chip's fixed-point format.
 
 ---
 
-## 9. What we've actually got
+## 9. What exists today
 
 Five different model types have been compiled and passed the full verification
 ladder on the AMD KV260 board (in simulation):
@@ -264,25 +264,22 @@ longer history, while ours doesn't).
 
 ---
 
-## 10. What's still missing (the honest bit)
+## 10. Where the research goes next
 
 Everything above is **verified in simulation** — the industry-standard way to
-prove a circuit is correct before committing it to silicon. What it is *not*
-yet is **run on a physical board.**
+prove a circuit is correct before committing it to silicon. The next phase of
+the research is **on-hardware validation**: running these designs on a
+physical AMD KV260 board to
 
-The remaining step needs an actual AMD KV260 development board. With one, we
-can:
-
-- confirm the timing holds on real silicon (simulation proves the logic; only
-  the real chip proves the final clock speed),
-- measure real power draw and the performance-per-watt story that matters most
-  for edge devices,
+- confirm the timing holds on real silicon (simulation proves the logic; the
+  real chip proves the final clock speed),
+- measure real power draw and performance-per-watt — the metric that matters
+  most for edge devices,
 - run a trained model live on real streaming data,
-- and put together a demo for the AMD Open Hardware competition.
+- and evaluate a broader suite of trained models end to end.
 
-In short: the hard, novel part — the compiler and its proof of correctness — is
-done. A board is what turns *"proven in simulation"* into *"running in your
-hand."*
+In short: the compiler and its proof of correctness are complete; hardware
+validation turns *"proven in simulation"* into *"measured on silicon."*
 
 ---
 

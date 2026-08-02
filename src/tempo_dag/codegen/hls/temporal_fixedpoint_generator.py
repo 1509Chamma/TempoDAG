@@ -24,7 +24,7 @@ separate, additive backend selected explicitly (benchmark --fixedpoint).
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
 
@@ -41,8 +41,29 @@ from tempo_dag.ir_temporal import Process
 from tempo_dag.verification.golden_trace import GoldenTrace
 
 _BINARY = {"Add": "+", "Sub": "-", "Mul": "*", "Div": "/"}
-_ACT = {"Tanh": "tanh_lut", "Sigmoid": "sig_lut"}
+_ACT = {"Tanh": "tanh_lut", "Sigmoid": "sig_lut", "ReLU": "relu_fx"}
 _SUPPORTED = set(_BINARY) | set(_ACT) | {"MatMul"}
+
+
+@dataclass(frozen=True)
+class CustomFixedPointOp:
+    """A user-defined elementwise operator for the fixed-point emitter.
+
+    Registering one extends the emitter AND the verification oracle in a
+    single object, so the oracle-relative certificate covers custom logic
+    exactly like the built-ins. The contract:
+
+    - `c_name`: the C function name; called per lane as `c_name((acc_t)x)`.
+    - `c_body`: the full C function definition (may use the `fx` and
+      `acc_t` typedefs), emitted into the design's prelude.
+    - `semantics`: a NumPy callable mirroring the C function EXACTLY on the
+      fixed-point grid (inputs arrive as float64 values on the fx grid).
+      If the two disagree, C-simulation fails loudly - which is the point.
+    """
+
+    c_name: str
+    c_body: str
+    semantics: object  # callable: np.ndarray -> np.ndarray
 
 
 @dataclass(frozen=True)
@@ -51,6 +72,8 @@ class FixedPointConfig:
 
     Defaults are the RTL-verified prototype working point (Q6.12, 512-entry
     tanh table over [-4, 4], II=12, 64-sample burst, 5ns clock).
+    `custom_ops` maps an IR op_type to a CustomFixedPointOp, extending the
+    emitter and oracle together (see tutorials/02_custom_operators).
     """
 
     w_bits: int = 18
@@ -61,6 +84,7 @@ class FixedPointConfig:
     burst: int = 64
     clock_ns: float = 5.0
     part: str = "xck26-sfvc784-2LV-c"
+    custom_ops: dict = field(default_factory=dict)
 
     @property
     def frac(self) -> int:
@@ -89,7 +113,14 @@ def _q(x, cfg: FixedPointConfig):
 
 
 def _lit(x: float) -> str:
-    s = f"{float(x):.9g}"
+    # 17 significant digits: exact round-trip for any double. Every emitted
+    # value (inputs, weights, LUT entries, golden) is a dyadic Q-format grid
+    # point, so this prints it exactly. At 9 digits (the old format) a
+    # literal could land a hair on the wrong side of its grid point, and
+    # ap_fixed's AP_TRN construction then floors it one LSB low - a silent
+    # 1-LSB perturbation of ~a quarter of all negative constants, which a
+    # recurrent state amplifies past the testbench gate.
+    s = f"{float(x):.17g}"
     return s + ("" if ("." in s or "e" in s or "inf" in s) else ".0")
 
 
@@ -125,8 +156,9 @@ def render_fixedpoint_burst_artifact(
         raise _FixedPointUnsupported("exactly one kernel required")
     kernel = next(iter(process.kernels.values()))
     graph = kernel.graph
+    supported = _SUPPORTED | set(cfg.custom_ops)
     for op in graph.ops.values():
-        if op.op_type not in _SUPPORTED:
+        if op.op_type not in supported:
             raise _FixedPointUnsupported(f"op '{op.op_type}' not supported")
 
     stream_ins, params, outs = _step_interface(process, kernel)
@@ -174,7 +206,15 @@ def render_fixedpoint_burst_artifact(
         "  const fx half = 0.5;",
         "  return half + half * tanh_lut((acc_t)(half * (fx)x));",
         "}",
+        # ReLU needs no table: zero or the fx-truncated input. The oracle
+        # mirrors this exactly as max(0, tr_fx(x)).
+        "static fx relu_fx(acc_t x) {",
+        "#pragma HLS INLINE",
+        "  return (x < 0) ? (fx)0 : (fx)x;",
+        "}",
     ]
+    for custom in cfg.custom_ops.values():
+        pre.append(custom.c_body)
     for vid, arr in baked.items():
         shape = _shape_of(graph.values[vid])
         q = _q(arr, cfg).reshape(shape or [1])
@@ -270,15 +310,18 @@ def render_fixedpoint_burst_artifact(
                 f"{_BINARY[op.op_type]} (acc_t){elem(b2, 'i')});"
             )
             body.append("  }")
-        elif op.op_type in _ACT:
+        elif op.op_type in _ACT or op.op_type in cfg.custom_ops:
+            call = (
+                _ACT[op.op_type]
+                if op.op_type in _ACT
+                else cfg.custom_ops[op.op_type].c_name
+            )
             a = op.inputs[0]
             out = op.outputs[0]
             n = max(1, _elems(_shape_of(graph.values[out])))
             body.append(f"  {op_id}_act: for (int i = 0; i < {n}; ++i) {{")
             body.append("#pragma HLS UNROLL")
-            body.append(
-                f"    {out}[i] = {_ACT[op.op_type]}" f"((acc_t){elem(a, 'i')});"
-            )
+            body.append(f"    {out}[i] = {call}((acc_t){elem(a, 'i')});")
             body.append("  }")
 
     # state write-back
@@ -425,6 +468,13 @@ def _fixedpoint_oracle(process, kernel, baked, golden_trace, cfg):
                 vals[out] = lut_tanh(get(op.inputs[0], vals))
             elif op.op_type == "Sigmoid":
                 vals[out] = lut_sig(get(op.inputs[0], vals))
+            elif op.op_type == "ReLU":
+                vals[out] = np.maximum(0.0, tr_fx(get(op.inputs[0], vals)))
+            elif op.op_type in cfg.custom_ops:
+                custom = cfg.custom_ops[op.op_type]
+                vals[out] = np.asarray(
+                    custom.semantics(get(op.inputs[0], vals)), np.float64
+                )
         for wvid, sid in state_write.items():
             st[sid] = vals[wvid].copy()
         golden_y.append(float(np.asarray(vals[out_vid]).ravel()[0]))
