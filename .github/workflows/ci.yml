@@ -67,7 +67,7 @@ jobs:
         run: >-
           python -m pytest
           --cov=tempo_dag --cov-report=term-missing --cov-report=xml
-          --cov-fail-under=80
+          --cov-fail-under=95
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v7

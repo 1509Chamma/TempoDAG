@@ -6,9 +6,9 @@ charset-normalizer==3.4.9
 click==8.4.2
 colorama==0.4.6
 coverage==7.15.2
-filelock==3.32.2
+filelock==3.32.0
 flatbuffers==25.12.19
-fsspec==2026.7.0
+fsspec==2026.6.0
 gast==0.7.0
 google-pasta==0.2.0
 grpcio==1.83.0
@@ -16,7 +16,7 @@ h5py==3.14.0
 idna==3.18
 iniconfig==2.3.0
 Jinja2==3.1.6
-keras==3.15.1
+keras==3.15.0
 libclang==18.1.1
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
@@ -55,4 +55,4 @@ torch==2.13.0
 typing_extensions==4.16.0
 urllib3==2.7.0
 wheel==0.47.0
-wrapt==2.3.0
+wrapt==2.2.2
