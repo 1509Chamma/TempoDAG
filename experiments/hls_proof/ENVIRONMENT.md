@@ -1,6 +1,6 @@
 # Environment for the Vitis proof sprint
 
-## What the human must install (Claude cannot do this part)
+## Prerequisites (manual install)
 
 1. **AMD Vitis HLS** (2023.2 or newer recommended; Kria/Zynq targets need no
    paid license). Download via the AMD Unified Installer (~40-100 GB, free

@@ -1,0 +1,26 @@
+name = "TempodagProofs"
+defaultTargets = ["IterationBound", "Certificates", "Achievability", "Resources", "ErrorBounds", "CSlow", "StreamingClasses", "PolyKernel"]
+
+[[lean_lib]]
+name = "IterationBound"
+
+[[lean_lib]]
+name = "Certificates"
+
+[[lean_lib]]
+name = "Achievability"
+
+[[lean_lib]]
+name = "Resources"
+
+[[lean_lib]]
+name = "ErrorBounds"
+
+[[lean_lib]]
+name = "CSlow"
+
+[[lean_lib]]
+name = "StreamingClasses"
+
+[[lean_lib]]
+name = "PolyKernel"
